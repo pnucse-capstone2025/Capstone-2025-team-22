@@ -176,5 +176,6 @@ cython_debug/
 ga_env
 
 src/data
+nlp/data
 
 .DS_Store
