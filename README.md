@@ -18,39 +18,14 @@
 파이토치 2.5.1(stable)
 
 ## 5. 데이터
-### 023.국회 회의록 기반 지식검색 데이터
-
-학습 데이터 수: 70466
-
-테스트 데이터 수: 8800
-
-### 143.민원 업무 효율, 자동화를 위한 언어 AI 학습데이터
-
-학습 데이터 수: 800000
-
-테스트 데이터 수: 100000
-
-### 115.법률-규정 텍스트 분석 데이터_고도화_상황에 따른 판례 데이터
-
-학습 데이터 수: 20160 + 53209
-
-테스트 데이터 수: 6651
+|  | 023.국회 회의록 기반<br>지식검색 데이터 | 143.민원 업무 효율,<br>자동화를 위한 언어 AI 학습데이터 | 115.법률-규정 텍스트 분석<br>데이터_고도화_상황에 따른 판례 데이터 | 전체 데이터<br>(전처리 전) | 전체 데이터<br>(전처리 후) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| train<br>데이터 수 | 70466 | 800000 | 20160 + 53209 | 943835 | 20052 |
+| test<br>데이터 수 | 8800 | 100000 | 6651 | 115451 | 4673 |
 
 ### 전체 데이터(정제 전 후)
 
-전체 학습 데이터 수: 943835 -> 20052
-
-전체 테스트 데이터 수: 115451 -> 4673
-
-
-train 데이터 전처리 전 분포
-![image] (./src/train_before_cleaning.png)
-
-train 데이터 전처리 후 분포
-![image] (./src/train_after_cleaning.png)
-
-test 데이터 전처리 전 분포
-![image] (./src/test_before_cleaning.png)
-
-test 데이터 전처리 후 분포
-![image] (./src/test_after_cleaning.png)
+| | 데이터 전처리 전 분포 | 데이터 전처리 후 분포 |
+| :---: | :---: | :---: |
+| train | <img width="300px" alt="train_before_cleaning" src="./src/train_before_cleaning.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/train_after_cleaning.png" />|
+| test | <img width="300px" alt="test_before_cleaning" src="./src/test_before_cleaning.png" /> | <img width="300px" alt="test_before_cleaning" src="./src/test_after_cleaning.png" />|
