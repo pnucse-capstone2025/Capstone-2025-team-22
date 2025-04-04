@@ -36,8 +36,21 @@
 
 테스트 데이터 수: 6651
 
-### 전체 데이터
+### 전체 데이터(정제 전 후)
 
-전체 학습 데이터 수: 943835
+전체 학습 데이터 수: 943835 -> 20052
 
-전체 테스트 데이터 수: 115451
+전체 테스트 데이터 수: 115451 -> 4673
+
+
+train 데이터 전처리 전 분포
+![image] (./src/train_before_cleaning.png)
+
+train 데이터 전처리 후 분포
+![image] (./src/train_after_cleaning.png)
+
+test 데이터 전처리 전 분포
+![image] (./src/test_before_cleaning.png)
+
+test 데이터 전처리 후 분포
+![image] (./src/test_after_cleaning.png)
