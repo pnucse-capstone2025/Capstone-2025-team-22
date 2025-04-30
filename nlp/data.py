@@ -10,10 +10,10 @@ class KeywordDataset(Dataset):
         return len(self.data)
     
     def __getitem__(self, idx):
-        datum = self.data[idx]
-        index = datum["index"]
-        text = datum["text"]
-        keyword = datum["keyword"]
+        item = self.data[idx]
+        index = item["index"]
+        text = item["text"]
+        keyword = item["keyword"]
         return {
             "index" : index,
             "text" : text,
@@ -25,12 +25,12 @@ class Collator(object):
         self.tokenizer = tokenizer
 
     def __call__(self, batch):
-        index = [[datum['index']] for datum in batch]
-        text = [datum['text'] for datum in batch]
+        index = [[item['index']] for item in batch]
+        text = [item['text'] for item in batch]
 
         keyword_id_list = list()
-        for datum in batch:
-            keyword_list = datum["keyword"]
+        for item in batch:
+            keyword_list = item["keyword"]
             keyword_ids = [self.tokenizer.encode(keyword)[1:-1] for keyword in keyword_list]
             keyword_id_list.append(keyword_ids)
 
@@ -58,9 +58,6 @@ class Collator(object):
         bio_tags = create_bio_tags(text_ids, keyword_id_list)
         
         return (torch.tensor(index), torch.tensor(text_ids), torch.tensor(text_attention_mask), torch.tensor(bio_tags))
-
-
-
     
 def load_data(file_path=None):
     assert file_path, "There is no file_path"
