@@ -7,7 +7,7 @@ from typing import Optional
 class KoKeyBERT(nn.Module):
     """ Korean KeyBERT Model """
     def __init__(self, 
-                config:BertConfig, 
+                config:BertConfig=None, 
                 num_class:int = 3, 
                 model_name:str = 'skt/kobert-base-v1')->None:
         
@@ -24,7 +24,8 @@ class KoKeyBERT(nn.Module):
     def forward(self,
                 input_ids:torch.LongTensor,
                 attention_mask:Optional[torch.FloatTensor] = None,
-                tags:Optional[torch.LongTensor] = None
+                tags:Optional[torch.LongTensor] = None,
+                return_outputs:Optional[bool] = False
                 ):
         """
         input: (B, L)
@@ -43,11 +44,18 @@ class KoKeyBERT(nn.Module):
         
         # (B, L, num_class)
         emissions = self.classifier(last_hidden_state)
+        emissions = emissions.float()
+        mask = attention_mask.to(torch.bool)
+
 
         if tags is not None:
-            log_likelihood, sequence_of_tags = self.crf(emissions, tags) , self.crf.viterbi_decode(emissions)
+            labels = tags.long()
+            log_likelihood, sequence_of_tags = self.crf(emissions, labels, mask) , self.crf.viterbi_decode(emissions, mask)
+            if return_outputs:
+                return log_likelihood, sequence_of_tags, outputs
             return log_likelihood, sequence_of_tags
         else:
-            sequence_of_tags = self.crf.decode(emissions)
+            sequence_of_tags = self.crf.viterbi_decode(emissions, mask)
+            if return_outputs:
+                return sequence_of_tags, outputs
             return sequence_of_tags
-
