@@ -14,7 +14,7 @@ class KoKeyBERT(nn.Module):
         super().__init__()
         self.model = BertModel.from_pretrained(model_name)
         if config is None:
-            self.config = model.config
+            self.config = self.model.config
         else:
             self.config = config
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
@@ -48,6 +48,6 @@ class KoKeyBERT(nn.Module):
             log_likelihood, sequence_of_tags = self.crf(emissions, tags) , self.crf.viterbi_decode(emissions)
             return log_likelihood, sequence_of_tags
         else:
-            sequence_of_tags = self.crf(emissions, tags)
+            sequence_of_tags = self.crf.decode(emissions)
             return sequence_of_tags
 
