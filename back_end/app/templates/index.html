@@ -1,0 +1,18 @@
+<!-- 사용자 입력 폼 HTML -->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>입력 테스트</title>
+</head>
+<body>
+        <form action="/input" method="post">
+            <input type="text" name="text" placeholder="입력하세요">
+            <button type="submit">확인</button>
+        </form>
+
+    {% if user_input %}
+    <p>입력된 값: {{ user_input }}</p>
+    {% endif %}
+</body>
+</html>
