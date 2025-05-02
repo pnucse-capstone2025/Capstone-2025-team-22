@@ -12,6 +12,7 @@ import torch
 import os
 import random
 import numpy as np
+from torch.nn.utils.rnn import pad_sequence
 
 def train(model: KoKeyBERT,
           optimizer: Optimizer,
@@ -30,6 +31,7 @@ def train(model: KoKeyBERT,
           ):
 
     logger = logging.getLogger(args.train_logger_name)
+    logger.setLevel(logging.DEBUG)
 
     # stream handler
     stream_handler = logging.StreamHandler()
@@ -73,14 +75,18 @@ def train(model: KoKeyBERT,
                                                 attention_mask=text_attention_mask.to(args.device), 
                                                 tags=bio_tags.to(args.device), 
                                                 return_outputs=False)
-            train_loss *= -1
+            # Ensure train_loss is a scalar
+            train_loss = -train_loss.mean()
             train_loss.backward()
             optimizer.step()
             scheduler.step()
 
             with torch.no_grad():
-                sequence_of_tags = torch.tensor(sequence_of_tags).to(args.device)
-                mb_acc = (sequence_of_tags == bio_tags.to(args.device)).float()[bio_tags != model.config.pad_token_id].mean()
+                tag_seqs = [torch.tensor(s, dtype=torch.long) for s in sequence_of_tags]
+                # 배치 내 가장 긴 시퀀스 길이로 패딩
+                padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(args.device)
+                mb_acc = (padded == bio_tags.to(args.device)).float()[text_attention_mask.bool()].mean()
+                
 
             tr_acc = mb_acc.item()
             logger.info("Step: %d, Loss: %f, Acc: %f", step, train_loss.item(), tr_acc)
@@ -130,15 +136,23 @@ def evaluate(model: KoKeyBERT,
         for batch in val_dataloader:
             val_step += 1
             index, text_ids, text_attention_mask, bio_tags = batch
+
+            # return log_likelihood, sequence_of_tags
             log_likelihood, sequence_of_tags = model(input_ids=text_ids.to(args.device), 
                                                     attention_mask=text_attention_mask.to(args.device), 
                                                     tags=bio_tags.to(args.device), 
                                                     return_outputs=False)
-            log_likelihood *= -1
+            log_likelihood = -log_likelihood.mean()
             total_val_loss += log_likelihood.item()
-            total_val_acc += (sequence_of_tags == bio_tags.to(args.device)).float()[bio_tags != model.config.pad_token_id].mean()
+            
+            # Handle sequence_of_tags as in training
+            tag_seqs = [torch.tensor(s, dtype=torch.long) for s in sequence_of_tags]
+            padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(args.device)
+            mb_acc = (padded == bio_tags.to(args.device)).float()[text_attention_mask.bool()].mean()
+            
+            total_val_acc += mb_acc.item()
             current_val_loss = log_likelihood.item()
-            current_val_acc = (sequence_of_tags == bio_tags.to(args.device)).float()[bio_tags != model.config.pad_token_id].mean()
+            current_val_acc = mb_acc.item()
             
             logger.info("Current Step: %d, Val loss: %f, Acc: %f", val_step, current_val_loss, current_val_acc)
             
@@ -177,14 +191,14 @@ def main():
     os.makedirs("./checkpoints", exist_ok=True)
 
     # Load and split data
-    train = load_data(args.train_data_path)
-    if train is None:
+    train_data = load_data(args.train_data_path)
+    if train_data is None:
         raise ValueError(f"Failed to load data from {args.train_data_path}")
 
-    train, val = train_test_split(train, random_state=args.random_seed, test_size=args.split_ratio)
+    train_data, val_data = train_test_split(train_data, random_state=args.random_seed, test_size=args.split_ratio)
 
-    train_dataset = KeywordDataset(train)
-    val_dataset = KeywordDataset(val)
+    train_dataset = KeywordDataset(train_data)
+    val_dataset = KeywordDataset(val_data)
 
     # Initialize training state
     step = 0
@@ -214,7 +228,7 @@ def main():
         # Load optimizer and scheduler
         param_optimizer = list(model.model.named_parameters()) \
                         + list(model.classifier.named_parameters()) \
-                        + list(model.crf.parameters())
+                        + list(model.crf.named_parameters())
         
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
@@ -246,7 +260,7 @@ def main():
         
         param_optimizer = list(model.model.named_parameters()) \
                         + list(model.classifier.named_parameters()) \
-                        + list(model.crf.parameters())
+                        + list(model.crf.named_parameters())
         
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
         optimizer_grouped_parameters = [
@@ -269,7 +283,6 @@ def main():
           step=step,
           epoch=epoch,
           num_epochs=args.num_epochs,
-          batch_size=args.batch_size,
           learning_rate=args.learning_rate,
           random_seed=args.random_seed,
           collator=collator,
