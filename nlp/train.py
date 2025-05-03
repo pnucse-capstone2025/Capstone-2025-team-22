@@ -27,6 +27,7 @@ def train(model: KoKeyBERT,
           collator:Collator = None,
           best_val_loss:float = float('inf'),
           best_val_acc:float = 0.0,
+          device:torch.device = None,
           args:argparse.Namespace = None,
           ):
 
@@ -71,9 +72,9 @@ def train(model: KoKeyBERT,
             index, text_ids, text_attention_mask, bio_tags = batch
 
             # return log_likelihood, sequence_of_tags
-            train_loss, sequence_of_tags = model(input_ids=text_ids.to(args.device), 
-                                                attention_mask=text_attention_mask.to(args.device), 
-                                                tags=bio_tags.to(args.device), 
+            train_loss, sequence_of_tags = model(input_ids=text_ids.to(device), 
+                                                attention_mask=text_attention_mask.to(device), 
+                                                tags=bio_tags.to(device), 
                                                 return_outputs=False)
             # Ensure train_loss is a scalar
             train_loss = -train_loss.mean()
@@ -84,8 +85,8 @@ def train(model: KoKeyBERT,
             with torch.no_grad():
                 tag_seqs = [torch.tensor(s, dtype=torch.long) for s in sequence_of_tags]
                 # 배치 내 가장 긴 시퀀스 길이로 패딩
-                padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(args.device)
-                mb_acc = (padded == bio_tags.to(args.device)).float()[text_attention_mask.bool()].mean()
+                padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(device)
+                mb_acc = (padded == bio_tags.to(device)).float()[text_attention_mask.bool()].mean()
                 
 
             tr_acc = mb_acc.item()
@@ -93,17 +94,19 @@ def train(model: KoKeyBERT,
 
             if args.val_freq is not None and step % args.val_freq == 0:
                 logger.info("Validating...")
-                val_loss, val_acc = evaluate(model, val_dataset, collator, args, logger)
+                val_loss, val_acc = evaluate(model, val_dataset, collator, args, logger, device)
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                     best_val_acc = val_acc
                     logger.info("Best val loss: %f, Best val acc: %f", best_val_loss, best_val_acc)
                     # save model
                     os.makedirs("./checkpoints", exist_ok=True)
+                    logger.info("Saving best model to ./checkpoints/best_model.pt")
                     torch.save(model.state_dict(), os.path.join("./checkpoints", "best_model.pt"))
             
             if args.save_freq is not None and step % args.save_freq == 0:
                 # save current training state in one file
+                logger.info("Saving current training state to ./checkpoints/step_" + str(step) + "_state.pt")
                 torch.save({
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
@@ -119,6 +122,7 @@ def evaluate(model: KoKeyBERT,
              collator:Collator = None,
              args:argparse.Namespace = None,
              logger:logging.Logger = None,
+             device:torch.device = None,
              ):
 
     sampler = SequentialSampler(val_dataset)
@@ -138,17 +142,17 @@ def evaluate(model: KoKeyBERT,
             index, text_ids, text_attention_mask, bio_tags = batch
 
             # return log_likelihood, sequence_of_tags
-            log_likelihood, sequence_of_tags = model(input_ids=text_ids.to(args.device), 
-                                                    attention_mask=text_attention_mask.to(args.device), 
-                                                    tags=bio_tags.to(args.device), 
+            log_likelihood, sequence_of_tags = model(input_ids=text_ids.to(device), 
+                                                    attention_mask=text_attention_mask.to(device), 
+                                                    tags=bio_tags.to(device), 
                                                     return_outputs=False)
             log_likelihood = -log_likelihood.mean()
             total_val_loss += log_likelihood.item()
             
             # Handle sequence_of_tags as in training
             tag_seqs = [torch.tensor(s, dtype=torch.long) for s in sequence_of_tags]
-            padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(args.device)
-            mb_acc = (padded == bio_tags.to(args.device)).float()[text_attention_mask.bool()].mean()
+            padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(device)
+            mb_acc = (padded == bio_tags.to(device)).float()[text_attention_mask.bool()].mean()
             
             total_val_acc += mb_acc.item()
             current_val_loss = log_likelihood.item()
@@ -171,7 +175,7 @@ def main():
     args.add_argument("--learning_rate", type=float, default=5e-5)
     args.add_argument("--random_seed", type=int, default=42)
     args.add_argument("--split_ratio", type=float, default=0.2)
-    args.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
+    args.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="xla for tpu, cuda for gpu, cpu for cpu")
     args.add_argument("--train_logger_name", type=str, default="train")
     args.add_argument("--num_workers", type=int, default=8, help="A100: 12, 8 recommanded")
     args.add_argument("--num_warmup_steps", type=int, default=100)
@@ -181,8 +185,18 @@ def main():
     args = args.parse_args()
 
     # Set random seed
-    torch.manual_seed(args.random_seed)
-    torch.cuda.manual_seed_all(args.random_seed)
+    if args.device == "cuda":
+        torch.cuda.manual_seed_all(args.random_seed)
+        device = torch.device("cuda")
+    elif args.device == "cpu":
+        torch.manual_seed(args.random_seed)
+        device = torch.device("cpu")
+    elif args.device == "xla":
+        import torch_xla.core.xla_model as xm
+        xm.set_rng_seed(args.random_seed)
+        device = xm.xla_device()
+    else:
+        raise ValueError(f"Unknown device: {args.device}")
     np.random.seed(args.random_seed)
     random.seed(args.random_seed)
 
@@ -221,7 +235,7 @@ def main():
             # Load model
             model = KoKeyBERT()
             model.load_state_dict(checkpoint['model_state_dict'])
-            model.to(args.device)
+            model.to(device)
         except Exception as e:
             raise RuntimeError(f"Failed to load checkpoint: {str(e)}")
         
@@ -256,7 +270,7 @@ def main():
     else:
         # Initialize new training
         model = KoKeyBERT()
-        model.to(args.device)
+        model.to(device)
         
         param_optimizer = list(model.model.named_parameters()) \
                         + list(model.classifier.named_parameters()) \
@@ -288,6 +302,7 @@ def main():
           collator=collator,
           best_val_loss=best_val_loss,
           best_val_acc=best_val_acc,
+          device=device,
           args=args,
           )
 
