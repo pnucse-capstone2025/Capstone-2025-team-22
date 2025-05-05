@@ -177,5 +177,5 @@ ga_env
 
 src/data
 nlp/data
-
+src/ignore
 .DS_Store

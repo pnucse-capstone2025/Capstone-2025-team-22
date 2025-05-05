@@ -4,7 +4,7 @@
 #### 공공데이터를 활용한 KoBERT 파인튜닝과 한국어 키워드 분석 및 대쉬보드 시각화
 
 ## 2. 시스템 구상도
-![image](./src/system_figure.png)
+![image](./src/img/system_figure.png)
 
 ## 3. 멤버
 | 박준혁 | 이차현 | 임성표 |
@@ -30,5 +30,5 @@ transforemrs 4.49.0
 
 | | 데이터 전처리 전 분포 | 데이터 전처리 후 분포 |
 | :---: | :---: | :---: |
-| train | <img width="300px" alt="train_before_cleaning" src="./src/train_before_cleaning.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/train_after_cleaning.png" />|
-| test | <img width="300px" alt="test_before_cleaning" src="./src/test_before_cleaning.png" /> | <img width="300px" alt="test_before_cleaning" src="./src/test_after_cleaning.png" />|
+| train | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_before_cleaning.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_after_cleaning.png" />|
+| test | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_before_cleaning.png" /> | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_after_cleaning.png" />|
