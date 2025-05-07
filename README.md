@@ -20,7 +20,24 @@
 - 단순히 모델 구현에 그치지 않고, 키워드 분석 결과를 직관적으로 보여주는 웹 기반의 시각화 대시보드를 개발한다.
 - 사용자는 텍스트를 입력하거나 이전 분석 결과를 불러올 수 있으며, 시스템은 실시간으로 키워드를 추출하고 이를 시각적으로 표현한다.
 
-## 2. 시스템 구상도
+## 3. 개발 환경 및 사용 기술
+
+### 3.1 개발 언어 및 환경
+- Python 3.12.9, JavaScript(React), TypeScript, SQL
+- VSCode 개발 환경
+
+### 3.2 사용 기술 스택
+- 프레임워크: FastAPI (백엔드), React (프론트엔드)
+- 데이터베이스: PostgreSQL
+- 인공지능 라이브러리: PyTorch, TorchCRF, Transformers
+- 시각화: Chart.js, WordCloud, Attention Heatmap
+- 배포: Docker, AWS EC2, AWS RDS
+
+### 3.3 사용 모델
+- KoBERT: 한국어 특화 사전학습 모델로서 형태소 처리에 강점을 가지고 있으며, 본 프로젝트에서는 키워드 BIO 태깅을 위해 활용됨
+- CRF Layer: 키워드 경계 예측의 안정성과 정확성을 높이기 위해 사용됨
+
+## 4. 시스템 구상도
 ![image](./src/system_figure.png)
 
 ## 3. 멤버
