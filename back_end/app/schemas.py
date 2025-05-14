@@ -3,3 +3,14 @@ from pydantic import BaseModel
 
 class UserInputCreate(BaseModel):
     text: str
+
+class POSResultCreate(BaseModel):
+    noun: str
+    verb: str
+    adjective: str
+
+class POSResult(POSResultCreate):
+    id: int
+
+    class Config:
+        orm_mode = True

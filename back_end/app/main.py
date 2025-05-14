@@ -8,7 +8,6 @@ from app.text_analysis import extract_pos_frequencies
 app = FastAPI()
 templates = Jinja2Templates(directory="app/templates")
 
-# 기본 폼 페이지 렌더링
 @app.get("/")
 def read_form(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
@@ -20,7 +19,7 @@ def handle_input(
     text: str = Form(...),
     db: Session = Depends(database.get_db)
 ):
-    # DB 저장
+    # 사용자 입력 DB 저장
     user_input = schemas.UserInputCreate(text=text)
     crud.create_user_input(db=db, user_input=user_input)
 
@@ -29,6 +28,14 @@ def handle_input(
     nouns = list(result['nouns'].keys())
     verbs = list(result['verbs'].keys())
     adjectives = list(result['adjectives'].keys())
+
+    # 형태소 분석 DB 저장
+    pos_result = schemas.POSResultCreate(
+        noun=", ".join(nouns),
+        verb=", ".join(verbs),
+        adjective=", ".join(adjectives)
+    )
+    crud.create_pos_result(db=db, result=pos_result)
 
     # 분석 결과 출력
     return templates.TemplateResponse(
