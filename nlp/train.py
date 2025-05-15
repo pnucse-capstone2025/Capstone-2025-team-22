@@ -175,7 +175,7 @@ def main():
     args.add_argument("--learning_rate", type=float, default=5e-5)
     args.add_argument("--random_seed", type=int, default=42)
     args.add_argument("--split_ratio", type=float, default=0.2)
-    args.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="xla for tpu, cuda for gpu, cpu for cpu")
+    args.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="cuda for gpu, cpu for cpu")
     args.add_argument("--train_logger_name", type=str, default="train")
     args.add_argument("--num_workers", type=int, default=8, help="A100: 12, 8 recommanded")
     args.add_argument("--num_warmup_steps", type=int, default=100)
@@ -191,10 +191,6 @@ def main():
     elif args.device == "cpu":
         torch.manual_seed(args.random_seed)
         device = torch.device("cpu")
-    elif args.device == "xla":
-        import torch_xla.core.xla_model as xm
-        xm.set_rng_seed(args.random_seed)
-        device = xm.xla_device()
     else:
         raise ValueError(f"Unknown device: {args.device}")
     np.random.seed(args.random_seed)
