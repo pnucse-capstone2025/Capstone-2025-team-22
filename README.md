@@ -147,7 +147,7 @@ python train.py --train_data_path training_data.json \
  | ![KoKeyBERT Confusion Matrix](./src/img/test/kokeybert_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./src/img/test/keybert-3words_confusion_matrix.png) | ![KeyBERT(6words) Confusion Matrix](./src/img/test/keybert-6words_confusion_matrix.png) | 
 
 - **모델별 성능 비교 그래프**
-  - ![모델 성능 비교](./src/img/test/model_performance_comparison.png)
+ ![모델 성능 비교](./src/img/test/model_performance_comparison.png)
 
 ### 6.4 분석 및 결론
 
