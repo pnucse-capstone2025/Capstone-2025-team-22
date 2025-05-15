@@ -1,8 +1,8 @@
-from mecab import MeCab  # 모듈 import
+from mecab import MeCab
 from collections import Counter
 
 def extract_pos_frequencies(text):
-    mecab = MeCab()  # 모듈의 MeCab() 호출
+    mecab = MeCab()
     tokens = mecab.pos(text)
 
     nouns = [word for word, tag in tokens if tag.startswith('NN')]      # 명사
