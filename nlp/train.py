@@ -1,6 +1,7 @@
 from data import KeywordDataset, Collator, load_data
 from model import KoKeyBERT
 from kobert_tokenizer import KoBERTTokenizer
+from transformers import BertConfig
 
 import argparse
 import logging
@@ -229,7 +230,8 @@ def main():
             checkpoint = torch.load(args.checkpoint_path)
             
             # Load model
-            model = KoKeyBERT()
+            config = BertConfig.from_pretrained(args.model_name)
+            model = KoKeyBERT(config=config)
             model.load_state_dict(checkpoint['model_state_dict'])
             model.to(device)
         except Exception as e:
@@ -265,7 +267,8 @@ def main():
         print(f"Checkpoint loaded. Resuming from epoch {epoch}, step {step}")
     else:
         # Initialize new training
-        model = KoKeyBERT()
+        config = BertConfig.from_pretrained(args.model_name)
+        model = KoKeyBERT(config=config)
         model.to(device)
         
         param_optimizer = list(model.model.named_parameters()) \
