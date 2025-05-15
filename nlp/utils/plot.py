@@ -512,7 +512,7 @@ def plot_metrics(data_list, labels=None, colors=None, title='모델 성능 지�
     plt.legend()
     
     plt.suptitle(title, fontsize=16)
-    plt.tight_layout()
+plt.tight_layout()
     
     # 그래프 저장
     if save_path:
@@ -558,7 +558,7 @@ if __name__ == "__main__":
             fig.savefig(save_path)
             print(f"혼동 행렬 저장 완료: {save_path}")
         
-        plt.show()
+plt.show()
         
     elif args.parse_type == 'metrics':
         if args.compare:

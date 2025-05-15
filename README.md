@@ -116,8 +116,47 @@ python train.py --train_data_path training_data.json \
 | Loss | Accuracy | 
 | <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_loss.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_accuracy.png" /> |
 
+## 6. 평가
 
-## 6. 멤버
+### 6.1 실험 환경 및 데이터
+- 테스트 데이터: 총 4845개 샘플
+- 평가 모델: KeyBERT(3개 키워드), KeyBERT(6개 키워드), KoKeyBERT
+- 평가 기준: Precision, Recall, F1 Score, Confusion Matrix(혼동 행렬)
+
+### 6.2 모델별 성능 요약
+
+| 모델명                | Precision | Recall | F1 Score | TP    | FP     | FN     |
+|----------------------|-----------|--------|----------|-------|--------|--------|
+| KeyBERT(3words)      | 0.0807    | 0.1420 | 0.1029   | 2316  | 26378  | 13990  |
+| KeyBERT(6words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  |
+| KoKeyBERT            | **0.4848**    | **0.2263** | **0.3086**   | **3690**  | **3921**   | **12616**  |
+
+- **KeyBERT(3words)**: 키워드 개수를 3개로 제한한 경우, Precision은 낮으나 Recall이 상대적으로 높음.
+- **KeyBERT(6words)**: 키워드 개수를 6개로 확장하면 Precision은 소폭 감소하나, Recall은 증가.
+- **KoKeyBERT**: Precision, Recall, F1 모두 KeyBERT 대비 월등히 높음. 특히 Precision이 크게 향상됨.
+
+### 6.3 시각화 결과
+
+- **모델별 혼동 행렬**
+
+|KoKeyBERT|KeyBERT(3words)|KeyBERT(6words)|
+|:---:|:---:|:---:|
+ | ![KoKeyBERT Confusion Matrix](./src/img/test/kokeybert_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./src/img/test/keybert-3words_confusion_matrix.png) | ![KeyBERT(6words) Confusion Matrix](./src/img/test/keybert-6words_confusion_matrix.png) | 
+
+- **모델별 성능 비교 그래프**
+  - ![모델 성능 비교](./src/img/test/model_performance_comparison.png)
+
+### 6.4 분석 및 결론
+
+- KoKeyBERT는 KeyBERT 대비 모든 지표에서 우수한 성능을 보임.
+- KeyBERT는 키워드 개수를 늘려도 F1 점수의 큰 개선이 없으며, 오히려 Precision이 감소하는 경향이 있음.
+- KoKeyBERT는 한국어에 특화된 구조와 CRF 결합으로 인해 실제 키워드 추출에서 높은 정확도와 재현율을 달성함.
+- 평가데이터가 입력데이터의 길이를 기준으로 오름차순 정렬되어있기 때문에 step이 진행됨에 따라 평가기준의 점수가 감소하는 경향이 보임. 즉, 입력이 길어지면 성능이 떨어지는 경향이 유지되고 있다는 한계는 완전히 극복되지 않았음.
+
+
+
+
+## 7. 멤버
 | 박준혁 | 이차현 | 임성표 |
 |:-------:|:-------:|:-------:| 
 |<a href="https://github.com/JakeFRCSE"><img width="100px" alt="박준혁" src="https://avatars.githubusercontent.com/u/162955476?v=4" /></a>|<a href="https://github.com/chahyunlee"><img width="100px" alt="이차현" src="https://avatars.githubusercontent.com/u/163325051?v=4" /></a>|<a href="https://github.com/LimSungPyo"><img width="100px" alt="임성표" src="https://avatars.githubusercontent.com/u/132332450?v=4" /></a>|
