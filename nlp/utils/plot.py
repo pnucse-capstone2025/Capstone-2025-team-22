@@ -466,7 +466,7 @@ def plot_metrics(data_list, labels=None, colors=None, title='모델 성능 지�
         figsize: 그래프 크기
         
     Returns:
-        matplotlib.figure.Figure: 그래프 객체
+        list: 그래프 객체 리스트 [precision_fig, recall_fig, f1_fig]
     """
     if not data_list:
         print("시각화할 데이터가 없습니다.")
@@ -482,42 +482,128 @@ def plot_metrics(data_list, labels=None, colors=None, title='모델 성능 지�
                          'brown', 'pink', 'gray', 'olive', 'cyan']
         colors = [default_colors[i % len(default_colors)] for i in range(len(data_list))]
     
-    # 그래프 생성 (수평 정렬)
-    fig = plt.figure(figsize=figsize)
-    # Precision (첫 번째 열)
-    plt.subplot(1, 3, 1)
+    figures = []
+    
+    # Precision 그래프
+    precision_fig = plt.figure(figsize=(6, 4))
     for i, (steps, precision, _, _) in enumerate(data_list):
         plt.plot(steps, precision, label=labels[i], color=colors[i])
     plt.title('Precision')
     plt.xlabel('Step')
     plt.grid(True, alpha=0.3)
     plt.legend()
-    
-    # Recall (두 번째 열)
-    plt.subplot(1, 3, 2)
+    plt.tight_layout()
+    figures.append(precision_fig)
+
+    # Recall 그래프
+    recall_fig = plt.figure(figsize=(6, 4))
     for i, (steps, _, recall, _) in enumerate(data_list):
         plt.plot(steps, recall, label=labels[i], color=colors[i])
     plt.title('Recall')
     plt.xlabel('Step')
     plt.grid(True, alpha=0.3)
     plt.legend()
-    
-    # F1 Score (세 번째 열)
-    plt.subplot(1, 3, 3)
+    plt.tight_layout()
+    figures.append(recall_fig)
+
+    # F1 Score 그래프
+    f1_fig = plt.figure(figsize=(6, 4))
     for i, (steps, _, _, f1) in enumerate(data_list):
         plt.plot(steps, f1, label=labels[i], color=colors[i])
     plt.title('F1 Score')
     plt.xlabel('Step')
     plt.grid(True, alpha=0.3)
     plt.legend()
+    plt.tight_layout()
+    figures.append(f1_fig)
     
-    plt.suptitle(title, fontsize=16)
-plt.tight_layout()
+    # 각 그래프를 별도의 파일로 저장
+    if save_path:
+        # 파일 경로에서 확장자 분리
+        base_path = os.path.splitext(save_path)[0]
+        ext = os.path.splitext(save_path)[1]
+        
+        # Precision 그래프 저장
+        precision_fig.savefig(f"{base_path}_precision{ext}")
+        print(f"Precision 그래프 저장 완료: {base_path}_precision{ext}")
+        
+        # Recall 그래프 저장
+        recall_fig.savefig(f"{base_path}_recall{ext}")
+        print(f"Recall 그래프 저장 완료: {base_path}_recall{ext}")
+        
+        # F1 Score 그래프 저장
+        f1_fig.savefig(f"{base_path}_f1{ext}")
+        print(f"F1 Score 그래프 저장 완료: {base_path}_f1{ext}")
+    
+    if show:
+        plt.show()
+    
+    return figures
+
+def parse_inference_time(log_path):
+    """
+    로그 파일에서 추론 시간을 파싱합니다.
+    
+    Args:
+        log_path: 로그 파일 경로
+        
+    Returns:
+        float: 초 단위의 추론 시간
+    """
+    with open(log_path, 'r') as f:
+        for line in f:
+            if "total time:" in line:
+                time_str = line.split("total time:")[1].strip()
+                # "0:01:38.196450" 형식을 초 단위로 변환
+                h, m, s = time_str.split(':')
+                total_seconds = int(h) * 3600 + int(m) * 60 + float(s)
+                return total_seconds
+    return None
+
+def plot_inference_time(log_files, labels, save_path=None, show=True):
+    """
+    모델별 추론 시간을 막대 그래프로 시각화합니다.
+    
+    Args:
+        log_files: 로그 파일 경로 리스트
+        labels: 모델 이름 리스트
+        save_path: 그래프 저장 경로 (None이면 저장하지 않음)
+        show: 그래프 표시 여부
+        
+    Returns:
+        matplotlib.figure.Figure: 그래프 객체
+    """
+    # 추론 시간 파싱
+    inference_times = []
+    for log_file in log_files:
+        time = parse_inference_time(log_file)
+        if time is not None:
+            inference_times.append(time)
+    
+    # 그래프 생성
+    fig = plt.figure(figsize=(10, 6))
+    bars = plt.bar(labels, inference_times, color=['#2ecc71', '#3498db', '#e74c3c'])
+    
+    # 막대 위에 시간 표시
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height,
+                f'{height:.1f}s',
+                ha='center', va='bottom')
+    
+    plt.title('Model Inference Time Comparison')
+    plt.ylabel('Inference Time (seconds)')
+    plt.grid(True, axis='y', alpha=0.3)
+    
+    # y축 범위 설정 (최대값의 1.2배)
+    plt.ylim(0, max(inference_times) * 1.2)
+    
+    plt.tight_layout()
     
     # 그래프 저장
     if save_path:
         plt.savefig(save_path)
-        print(f"model performance metrics graph saved: {save_path}")
+        print(f"Inference time comparison graph saved: {save_path}")
     
     if show:
         plt.show()
@@ -530,7 +616,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_dir', default=None, help='출력 디렉토리 경로')
     parser.add_argument('--model_name', default='Model', help='모델의 이름')
     parser.add_argument('--parse_type', default='loss_acc', 
-                        help='파싱 타입 (loss_acc, confusion_matrix, metrics)')
+                        help='파싱 타입 (loss_acc, confusion_matrix, metrics, inference_time)')
     parser.add_argument('--compare', action='store_true', 
                         help='여러 로그 파일 비교 (--logfile은 콤마로 구분된 파일 목록)')
     parser.add_argument('--labels', help='비교할 모델 이름들 (콤마로 구분)')
@@ -558,7 +644,7 @@ if __name__ == "__main__":
             fig.savefig(save_path)
             print(f"혼동 행렬 저장 완료: {save_path}")
         
-plt.show()
+        plt.show()
         
     elif args.parse_type == 'metrics':
         if args.compare:
@@ -585,3 +671,14 @@ plt.show()
                 fig = plot_metrics(data_list, labels=[args.model_name], 
                                  title=f'{args.model_name} model performance metrics', 
                                  save_path=save_path)
+    
+    elif args.parse_type == 'inference_time':
+        if args.compare:
+            # 여러 로그 파일 비교
+            log_files = args.logfile.split(',')
+            labels = args.labels.split(',') if args.labels else [f"model {i+1}" for i in range(len(log_files))]
+            
+            save_path = os.path.join(args.output_dir, 'inference_time_comparison.png') if args.output_dir else None
+            fig = plot_inference_time(log_files, labels, save_path=save_path)
+        else:
+            print("추론 시간 비교를 위해서는 --compare 옵션과 --labels가 필요합니다.")
