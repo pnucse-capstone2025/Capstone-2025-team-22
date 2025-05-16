@@ -29,8 +29,8 @@
 
 | 주차 | 키워드 | 계획 | 진행 내역 |
 |:-------:|:-------:|:-------:|:-------:|
-| 1주차 (2025.5.5 ~ 2025.5.11)| 데이터 | 데이터 전처리 | |
-| 2주차 (2025.5.12 ~ 2025.5.18)| 데이터 | 데이터 전처리 | |
+| 1주차 (2025.5.5 ~ 2025.5.11)| 데이터 | 데이터 전처리 | ✅ |
+| 2주차 (2025.5.12 ~ 2025.5.18)| 데이터 | 데이터 전처리 | ✅ |
 | 3주차 (2025.5.19 ~ 2025.5.25)| 모델 | 모델 설계 | |
 | 4주차 (2025.5.26 ~ 2025.6.1)| 모델 | 모델 구현 | |
 | 5주차 (2025.6.30 ~ 2025.7.6)| 모델 | 모델 학습 | |
@@ -128,11 +128,11 @@ python train.py --train_data_path training_data.json \
 
 ### 6.2 모델별 성능 요약
 
-| 모델명                | Precision | Recall | F1 Score | TP    | FP     | FN     |
-|----------------------|-----------|--------|----------|-------|--------|--------|
-| KeyBERT(3words)      | 0.0807    | 0.1420 | 0.1029   | 2316  | 26378  | 13990  |
-| KeyBERT(6words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  |
-| KoKeyBERT            | **0.4848**    | **0.2263** | **0.3086**   | **3690**  | **3921**   | **12616**  |
+| 모델명                | Precision | Recall | F1 Score | TP    | FP     | FN     | 추론 시간(T4 기준) |
+|----------------------|-----------|--------|----------|-------|--------|--------|--------|
+| KeyBERT(3words)      | 0.0807    | 0.1420 | 0.1029   | 2316  | 26378  | 13990  | 3분57초 |
+| KeyBERT(6words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  | 4분 4초 |
+| KoKeyBERT            | **0.4848<br>(40%p)**    | **0.2263<br>(8%p)** | **0.3086<br>(20%p)**   | **3690**  | **3921**   | **12616**  | **1분 38초<br>(x2.4)** |
 
 - **KeyBERT(3words)**: 키워드 개수를 3개로 제한한 경우, Precision은 낮으나 Recall이 상대적으로 높음.
 - **KeyBERT(6words)**: 키워드 개수를 6개로 확장하면 Precision은 소폭 감소하나, Recall은 증가.
@@ -146,8 +146,11 @@ python train.py --train_data_path training_data.json \
 |:---:|:---:|:---:|
  | ![KoKeyBERT Confusion Matrix](./src/img/test/kokeybert_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./src/img/test/keybert-3words_confusion_matrix.png) | ![KeyBERT(6words) Confusion Matrix](./src/img/test/keybert-6words_confusion_matrix.png) | 
 
-- **모델별 성능 비교 그래프**
- ![모델 성능 비교](./src/img/test/model_performance_comparison.png)
+- #### 성능 지표
+
+| Precision | Recall | F1 Score | Inference Time |
+|-----------|---------|-----------|-----------|
+| ![Precision Comparison](src/img/test/model_performance_comparison_precision.png) | ![Recall Comparison](src/img/test/model_performance_comparison_recall.png) | ![F1 Score Comparison](src/img/test/model_performance_comparison_f1.png) | ![Inference Time Comparison](src/img/test/inference_time_comparison.png) |
 
 ### 6.4 분석 및 결론
 
