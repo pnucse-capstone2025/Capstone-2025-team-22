@@ -176,9 +176,42 @@ python train.py --train_data_path training_data.json \
 2.  정답 키워드 특성 (명사 중심): 사용된 데이터셋의 정답 키워드가 주로 명사로 구성되어 있다는 점을 고려할 때, EM(Exact Match) 기반의 평가는 명사 추출에 강점을 보이는 모델에 유리하게 작용할 수 있다. KeyBERT가 의미 있는 구(phrase) 형태의 키워드를 추출하더라도, 정답이 명사 중심일 경우 평가에서 불리했을 가능성을 고려해야 한다. 
 
 
+## 7. 사용법
+
+1. 라이브러리 임포트
+```python
+from model import KoKeyBERT
+from transformers import BertConfig
+from kobert_tokenizer import KoBERTTokenizer
+```
+2. 모델 및 토크나이저 로드(CPU 환경 가정)
+```python
+config = BertConfig.from_pretrained('skt/kobert-base-v1')
+model = KoKeyBERT(config=config)
+model.load_state_dict(torch.load('src/model_state/best_model.pt', map_location=torch.device('cpu'), weights_only=True))
+tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+```
+3. model.extract_keywords 함수 사용
+```python
+while True:
+        text = input('Enter a text: ')
+        print(model.extract_keywords(text, tokenizer))
+        """
+        Args: 
+          text: str
+              한국어 입력
+          tokenizer: KoBERTTokenizer
+              키버트 토크나이저
+        Returns:
+          pred_keywords: set
+              예측된 단어 집합
+        """
+```
+        
 
 
-## 7. 멤버
+
+## 8. 멤버
 | 박준혁 | 이차현 | 임성표 |
 |:-------:|:-------:|:-------:| 
 |<a href="https://github.com/JakeFRCSE"><img width="100px" alt="박준혁" src="https://avatars.githubusercontent.com/u/162955476?v=4" /></a>|<a href="https://github.com/chahyunlee"><img width="100px" alt="이차현" src="https://avatars.githubusercontent.com/u/163325051?v=4" /></a>|<a href="https://github.com/LimSungPyo"><img width="100px" alt="임성표" src="https://avatars.githubusercontent.com/u/132332450?v=4" /></a>|
