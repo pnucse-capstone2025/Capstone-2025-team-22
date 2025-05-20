@@ -68,7 +68,7 @@ class KoKeyBERT(nn.Module):
     def extract_keywords(self,
                          text,
                          tokenizer,
-                         ):
+                         ) -> set:
         """
         input: Natural language text
         """
@@ -85,8 +85,6 @@ class KoKeyBERT(nn.Module):
         text_ids = tokenizer.encode(text)
         pred_keywords = []
         try:
-            print(text_ids)
-            print(outputs[0])
             # 예측된 키워드 추출
             pred_keyword = extract_keywords_from_bio_tags(
                 text_ids,
@@ -108,10 +106,20 @@ class KoKeyBERT(nn.Module):
 if __name__ == '__main__':
     from transformers import BertConfig
     from kobert_tokenizer import KoBERTTokenizer
+
+    # Model Loading Part
+
+    # Load the model configuration
     config = BertConfig.from_pretrained('skt/kobert-base-v1')
     model = KoKeyBERT(config=config)
+
+    # Load the model state
     model.load_state_dict(torch.load('src/model_state/best_model.pt', map_location=torch.device('cpu'), weights_only=True))
+
+    # Load the tokenizer
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+
+
     while True:
         text = input('Enter a text: ')
         print(model.extract_keywords(text, tokenizer))
