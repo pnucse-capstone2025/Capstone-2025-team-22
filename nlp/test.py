@@ -13,10 +13,11 @@ import os
 from torch.nn.utils.rnn import pad_sequence
 import json
 from datetime import datetime
+from typing import List
 # 전역 로거 설정
 logger = logging.getLogger(__name__)
 
-def extract_keywords_from_bio_tags(tokens, bio_tags, attention_mask, tokenizer, device):
+def extract_keywords_from_bio_tags(tokens, bio_tags, attention_mask, tokenizer, device) -> List[str]:
     """
     BIO 태그를 기반으로 키워드를 추출합니다.
     

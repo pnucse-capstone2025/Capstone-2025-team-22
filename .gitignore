@@ -179,3 +179,6 @@ src/data
 nlp/data
 src/ignore
 .DS_Store
+
+src/model_state/best_model.pt
+nlp/data_preprocessing.ipynb
