@@ -1,0 +1,80 @@
+.layoutWrapper {
+  background-color: #fafafa;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.hamburgerBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1100;
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #394254;
+
+  &.open {
+    color: #fafafa;
+  }
+}
+
+.searchBar {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  left: -20vw;
+  width: 280px;
+  height: 100%;
+  padding: 60px 16px;
+  background: #394254;
+  transition: left 0.4s ease-in-out;
+  z-index: 1000;
+  box-sizing: border-box;
+  overflow-y: auto;
+
+  &.open {
+    left: 0;
+  }
+}
+
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 900;
+}
+
+.drawerBlock {
+  height: 15vh;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  background: #fafafa;
+  border: 1px solid #7c7c7c;
+  border-radius: 4px;
+  user-select: none;
+  z-index: 1200;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    transition: transform 0.2s ease;
+  }
+}
