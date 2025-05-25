@@ -37,8 +37,6 @@ export function MainLayout() {
         ))}
       </aside>
       {drawerOpen && <div className={styles.backdrop} onClick={toggleDrawer} />}
-
-      {/* 여기서 HomePage 또는 DetailPage 중 하나가 렌더링됩니다 */}
       <Outlet />
     </div>
   )

@@ -10,6 +10,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [minHeight, setMinHeight] = useState<number>(0)
+  const [showSubButtons, setShowSubButtons] = useState(false)
 
   useEffect(() => {
     const ta = textareaRef.current
@@ -34,6 +35,7 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     onSearch(value.trim())
+    setShowSubButtons(prev => !prev)
   }
 
   return (
@@ -46,7 +48,15 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
         onChange={handleChange}
         rows={1}
       />
-      <button type="submit">분석하기</button>
+       <button type="submit" className={styles.mainButton}>분석</button>
+
+      {showSubButtons && (
+        <div className={styles.subButtonGroup}>
+          <button type="button" className={styles.subButton}>명사</button>
+          <button type="button" className={styles.subButton}>형용사</button>
+          <button type="button" className={styles.subButton}>동사</button>
+        </div>
+      )}
     </form>
   )
 }
