@@ -1,13 +1,18 @@
 .detailWrapper{
-  height: 100vh;
   display:flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 20px;
+  font-size: 18px;
 
   color: #ffffff;
 }
-.detailContainer{
-  padding: 20px;
-  border: 1px solid black;
+
+.highlight {
+
+  color: #3EC1D3;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-weight: 600;
 }
