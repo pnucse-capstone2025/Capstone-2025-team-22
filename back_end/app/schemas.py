@@ -14,3 +14,9 @@ class POSResult(POSResultCreate):
 
     class Config:
         orm_mode = True
+
+class TextInput(BaseModel):
+    text: str
+
+class Config:
+    from_attributes = True  # Pydantic v2에서 권장

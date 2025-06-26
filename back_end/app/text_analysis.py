@@ -55,7 +55,6 @@ def extract_pos_frequencies(text):
     }
 
 # sample_text = "숙제를 끝내버렸다."
-# extract_full_verbs(sample_text)
 # print(extract_pos_frequencies(sample_text))
 
 # mecab = MeCab()

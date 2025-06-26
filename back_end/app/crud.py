@@ -21,7 +21,3 @@ def create_pos_result(db: Session, result: schemas.POSResultCreate):
     db.commit()
     db.refresh(pos_result)
     return pos_result
-
-# 저장된 입력값을 가져오는 함수
-def get_user_inputs(db: Session, skip: int = 0, limit: int = 10):
-    return db.query(models.UserInput).offset(skip).limit(limit).all()
