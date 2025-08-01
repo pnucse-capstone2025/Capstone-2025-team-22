@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Outlet } from 'react-router-dom'
-import SearchBar from '../components/SearchBar/SearchBar'
+import SearchBar from '@/components/SearchBar/SearchBar'
 import styles from './MainLayout.module.scss'
 
 export function MainLayout() {

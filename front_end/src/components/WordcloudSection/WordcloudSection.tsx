@@ -1,35 +1,37 @@
-import WordCloud from 'react-d3-cloud'
-import { mockData } from '../../data/mock'
-import styles from './WordcloudSection.module.scss'
+import WordCloud from "react-d3-cloud";
+import { mockData } from "@/data/mock";
+import styles from "@/components/WordcloudSection/WordcloudSection.module.scss";
 
 interface WordCloudDatum {
-  text: string
-  value: number
-  color: string
+  text: string;
+  value: number;
+  color: string;
 }
 
 interface WordCloudSectionProps {
-  words: string[]
-  title: string
+  words: string[];
+  title: string;
 }
 
-const colors = ['#3EC1D3', '#23C8EF', '#FF165D', '#F472B6']
+const colors = ["#3EC1D3", "#23C8EF", "#FF165D", "#F472B6"];
 
 const WordCloudSection = ({ words, title }: WordCloudSectionProps) => {
   if (!words || words.length < 1) {
     return (
       <div className={styles.wordCloudSection}>
         <h3 className={styles.title}>{title}</h3>
-        <p className={styles.noresultmsg}>텍스트 분석 결과에 형용사가 없습니다.</p>
+        <p className={styles.noresultmsg}>
+          텍스트 분석 결과에 형용사가 없습니다.
+        </p>
       </div>
-    )
+    );
   }
 
   const formattedWords: WordCloudDatum[] = words.map((word) => ({
     text: word,
     value: Math.floor(Math.random() * 30) + 10,
-    color: colors[Math.floor(Math.random() * colors.length)]
-  }))
+    color: colors[Math.floor(Math.random() * colors.length)],
+  }));
 
   return (
     <div className={styles.wordCloudSection}>
@@ -37,9 +39,9 @@ const WordCloudSection = ({ words, title }: WordCloudSectionProps) => {
       <div className={styles.cloudContainer}>
         <WordCloud
           data={formattedWords}
-          fontSize={(w) => Math.log2(w.value) * 16}
+          fontSize={(w: WordCloudDatum) => Math.log2(w.value) * 16}
           font="Pretendard"
-           fill={(w: WordCloudDatum) => w.color}
+          fill={(w: WordCloudDatum) => w.color}
           rotate={() => 0}
           padding={2}
           width={800}
@@ -47,8 +49,8 @@ const WordCloudSection = ({ words, title }: WordCloudSectionProps) => {
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
 export default function WordCloudPage() {
   return (
@@ -57,5 +59,5 @@ export default function WordCloudPage() {
       <WordCloudSection words={mockData.adverb} title="형용사 워드클라우드" />
       <WordCloudSection words={mockData.verb} title="동사 워드클라우드" />
     </div>
-  )
+  );
 }

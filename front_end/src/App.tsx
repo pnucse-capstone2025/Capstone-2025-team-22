@@ -1,5 +1,5 @@
-import '../src/App.css'
-import { Routes } from './routes/routes'
+import '@/App.css'
+import { Routes } from '@/routes/routes'
 
 function App() {
   return (
