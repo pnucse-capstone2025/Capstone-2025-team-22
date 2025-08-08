@@ -1,43 +1,34 @@
-import { useState } from 'react'
-import { useNavigate, Outlet } from 'react-router-dom'
-import SearchBar from '@/components/SearchBar/SearchBar'
-import styles from './MainLayout.module.scss'
+import { useState } from "react";
+import { useNavigate, Outlet } from "react-router-dom";
+import SearchBar from "@/components/SearchBar/SearchBar";
+import Drawer from "@/components/Drawer/Drawer";
+import styles from "./MainLayout.module.scss";
 
 export function MainLayout() {
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const toggleDrawer = () => setDrawerOpen(prev => !prev)
-  const handleCardClick = (id: number) => {
-    navigate(`/detail/${id}`)
-  }
+  const toggleDrawer = () => setDrawerOpen((prev) => !prev);
+
+  const handleSearch = (query: string) => {
+    // 분석 로직 실행 후 최신 기록으로 이동
+    console.log("분석:", query);
+    navigate('/detail/1');
+  };
 
   return (
     <div className={styles.layoutWrapper}>
       <button
-        className={`${styles.hamburgerBtn} ${drawerOpen ? styles.open : ''}`}
+        className={`${styles.hamburgerBtn} ${drawerOpen ? styles.open : ""}`}
         onClick={toggleDrawer}
       >
         ☰
       </button>
-
-      <SearchBar className={styles.searchBar} onSearch={() => {}} />
-
-      <aside className={`${styles.drawer} ${drawerOpen ? styles.open : ''}`}>
-        {[...Array(15)].map((_, i) => (
-          <div
-            key={i}
-            className={styles.drawerBlock}
-            onClick={() => handleCardClick(i + 1)}
-            role="button"
-            tabIndex={0}
-          >
-            과거 검색 기록 {i + 1}
-          </div>
-        ))}
-      </aside>
-      {drawerOpen && <div className={styles.backdrop} onClick={toggleDrawer} />}
+      <div className={styles.wrapper}>
+        <SearchBar className={styles.searchBar} onSearch={handleSearch} />
+      </div>
+      <Drawer isOpen={drawerOpen} onToggle={toggleDrawer} />
       <Outlet />
     </div>
-  )
+  );
 }

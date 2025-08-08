@@ -13,11 +13,11 @@ const router = createBrowserRouter([
         index: true,           
         element: <HomePage />,
       },
-      {
-        path: 'detail/:id',     
-        element: <DetailPage />,
-      },
     ],
+  },
+  {
+    path: RouterPath.DETAIL,     
+    element: <DetailPage />,
   },
 ])
 

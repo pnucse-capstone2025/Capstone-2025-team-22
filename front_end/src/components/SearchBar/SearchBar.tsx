@@ -7,11 +7,11 @@ interface SearchBarProps {
   className?: string;
 }
 
-export default function SearchBar({ onSearch }: SearchBarProps) {
+export default function SearchBar({ onSearch, className }: SearchBarProps) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [minHeight, setMinHeight] = useState<number>(0);
-  const [showSubButtons, setShowSubButtons] = useState(false);
+
 
   useEffect(() => {
     const ta = textareaRef.current;
@@ -36,11 +36,10 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSearch(value.trim());
-    setShowSubButtons((prev) => !prev);
   };
 
   return (
-    <form className={styles.searchBar} onSubmit={handleSubmit}>
+    <form className={`${styles.searchBar} ${className || ''}`} onSubmit={handleSubmit}>
       <textarea
         ref={textareaRef}
         className={styles.searchInput}
@@ -52,20 +51,6 @@ export default function SearchBar({ onSearch }: SearchBarProps) {
       <button type="submit" className={styles.mainButton}>
         분석
       </button>
-
-      {showSubButtons && (
-        <div className={styles.subButtonGroup}>
-          <button type="button" className={styles.subButton}>
-            명사
-          </button>
-          <button type="button" className={styles.subButton}>
-            형용사
-          </button>
-          <button type="button" className={styles.subButton}>
-            동사
-          </button>
-        </div>
-      )}
     </form>
   );
 }

@@ -1,33 +1,3 @@
-.layoutWrapper {
-  background-color: #171b26;
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0;
-  padding: 0;
-}
-
-.hamburgerBtn {
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1100;
-  background: none;
-  border: none;
-  font-size: 28px;
-  cursor: pointer;
-  color: #394254;
-
-  &.open {
-    color: #fafafa;
-  }
-}
-
 .drawer {
   position: fixed;
   top: 0;
@@ -46,14 +16,6 @@
   }
 }
 
-.searchBar {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0 !important;
-}
-
 .backdrop {
   position: fixed;
   top: 0;
@@ -70,7 +32,6 @@
   margin-bottom: 16px;
   box-sizing: border-box;
   background: #ececec;
-  border: 1px solid #6b7280;
   border-radius: 4px;
   user-select: none;
   z-index: 1200;
@@ -88,12 +49,12 @@
 }
 
 .drawerText {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
 }
 
 .drawerDate {
-  font-size: 12px;
+  font-size: 14px;
   color: #9ca3af;
   margin-top: 4px;
 }
