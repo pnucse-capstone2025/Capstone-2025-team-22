@@ -181,4 +181,10 @@ src/ignore
 .DS_Store
 
 src/model_state/best_model.pt
+nlp/best_model.pt
 nlp/data_preprocessing.ipynb
+
+# Node.js dependencies
+node_modules/
+front_end/node_modules/
+package-lock.json
