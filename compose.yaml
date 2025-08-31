@@ -4,14 +4,27 @@ services:
     container_name: pgvector-db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: graduser
+      POSTGRES_PASSWORD: graduser
+      POSTGRES_DB: graddb
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     volumes:
-      - "${POSTGRES_VOLUME_PATH}:/var/lib/postgresql/data"
+      - "/Volumes/SSD/graduation_assignment/database:/var/lib/postgresql/data"
+    networks:
+      - kokeybert
+
+  frontend:
+    build:
+      context: ./front_end
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./front_end:/app
+      - /app/node_modules
     networks:
       - kokeybert
 

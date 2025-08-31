@@ -182,3 +182,73 @@ src/ignore
 
 src/model_state/best_model.pt
 nlp/data_preprocessing.ipynb
+
+# AI/ML Model files (민감한 학습된 모델 파일들)
+*.pt
+*.pth
+*.pkl
+*.h5
+*.ckpt
+*.model
+*.weights
+nlp/best_model.*
+nlp/model_checkpoints/
+nlp/saved_models/
+
+# Log files (로그 파일들)
+*.log
+log/
+logs/
+nlp/log/
+back_end/logs/
+
+# Node.js (프론트엔드 관련)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json  # 루트 레벨의 불필요한 lock 파일
+.npm
+.yarn/
+
+# Docker 관련
+.dockerignore
+docker-compose.override.yml
+
+# IDE 및 에디터
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 운영체제 관련
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 환경 변수 및 설정 파일
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+config/secrets.yml
+config/database.yml
+
+# 데이터베이스 관련
+*.db
+*.sqlite
+*.sqlite3
+database/
+db_data/
+
+# 임시 파일들
+*.tmp
+*.temp
+.cache/
+.temp/
