@@ -5,18 +5,19 @@ import WordCloudPage from "@/components/WordcloudSection/WordcloudSection";
 import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
 import { mockData, mockDataNoKeywords } from "@/data/mock";
+import TextHighlighter from "@/pages/Detail/components/TextHighligher/TextHighlighter";
 
 export const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const currentData = id === "2" ? mockDataNoKeywords : mockData;
   const keywords = currentData.key_word;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
 
   const handleSearch = (query: string) => {
-    // 검색 로직 구현
     console.log("검색:", query);
     navigate("/detail/1");
   };
@@ -39,7 +40,17 @@ export const DetailPage = () => {
               <>
                 키워드 :{" "}
                 {keywords.map((kw: string, i: number) => (
-                  <span key={i} className={styles.highlight}>
+                  <span
+                    key={i}
+                    className={styles.highlight}
+                    style={{
+                      cursor: "pointer",
+                      fontWeight: selectedKeyword === kw ? "bold" : "normal",
+                    }}
+                    onClick={() =>
+                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
+                    }
+                  >
                     {kw}
                     {i < keywords.length - 1 && ",\u00A0"}
                   </span>
@@ -51,7 +62,10 @@ export const DetailPage = () => {
           </p>
         </div>
         <div className={styles.textContent}>
-          <p>{currentData.input}</p>
+          <TextHighlighter
+            text={currentData.input}
+            hoveredKeyword={selectedKeyword}
+          />
         </div>
         <div className={styles.detailContainer}>
           <WordCloudPage

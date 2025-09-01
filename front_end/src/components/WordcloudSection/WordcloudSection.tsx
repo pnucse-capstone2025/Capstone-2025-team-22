@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import WordCloud from "react-d3-cloud";
 import { mockData } from "@/data/mock";
 import styles from "@/components/WordcloudSection/WordcloudSection.module.scss";
@@ -17,7 +18,11 @@ const colors = ["#3EC1D3", "#23C8EF", "#FF165D", "#F472B6"];
 
 const WordCloudSection = ({ words, title }: WordCloudSectionProps) => {
   if (!words || words.length < 1) {
-    const partOfSpeech = title.includes("명사") ? "명사" : title.includes("동사") ? "동사" : "형용사";
+    const partOfSpeech = title.includes("명사")
+      ? "명사"
+      : title.includes("동사")
+      ? "동사"
+      : "형용사";
     return (
       <div className={styles.wordCloudSection}>
         <h3 className={styles.title}>{title}</h3>
@@ -28,11 +33,13 @@ const WordCloudSection = ({ words, title }: WordCloudSectionProps) => {
     );
   }
 
-  const formattedWords: WordCloudDatum[] = words.map((word) => ({
-    text: word,
-    value: Math.floor(Math.random() * 30) + 10,
-    color: colors[Math.floor(Math.random() * colors.length)],
-  }));
+  const formattedWords: WordCloudDatum[] = useMemo(() => {
+    return words.map((word) => ({
+      text: word,
+      value: Math.floor(Math.random() * 30) + 10,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    }));
+  }, [words]);
 
   return (
     <div className={styles.wordCloudSection}>
@@ -59,11 +66,11 @@ interface WordCloudPageProps {
   adverbWords?: string[];
 }
 
-export default function WordCloudPage({ 
-  nounWords = mockData.noun, 
-  verbWords = mockData.verb, 
-  adverbWords = mockData.adverb 
-}: WordCloudPageProps) {
+const WordCloudPage = ({
+  nounWords = mockData.noun,
+  verbWords = mockData.verb,
+  adverbWords = mockData.adverb,
+}: WordCloudPageProps) => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.leftSection}>
@@ -75,4 +82,6 @@ export default function WordCloudPage({
       </div>
     </div>
   );
-}
+};
+
+export default memo(WordCloudPage);
