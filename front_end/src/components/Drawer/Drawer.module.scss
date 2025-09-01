@@ -4,7 +4,7 @@
   left: -200%;
   width: 280px;
   height: 100%;
-  padding: 60px 16px;
+  padding: 50px 16px;
   background: #f7f7f8;
   transition: left 0.4s ease-in-out;
   z-index: 1000;
@@ -28,33 +28,35 @@
 
 .drawerBlock {
   height: 80px;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 20px 15px;
+  margin: 12px 0;
   box-sizing: border-box;
+  border: 1px solid #ececec;
   border-radius: 4px;
-  border: 1px solid #e5e7eb;
   user-select: none;
   z-index: 1200;
   cursor: pointer;
   color: #6b7073;
   text-align: left;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 
   &:hover {
-    border: 1.5px solid #3ec0d2;
-    transition: transform 0.2s ease;
+    border-radius: 4px;
+    background: #ececec;
   }
   &:focus {
-    border: 1.5px solid #3ec0d2;
-    transition: transform 0.2s ease;
+    border-radius: 4px;
+    background: #ececec;
   }
 }
 
 .drawerText {
   font-size: 16px;
   font-weight: 500;
+  color: #374151;
 }
 
 .drawerDate {
