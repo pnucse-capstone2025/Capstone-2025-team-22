@@ -4,9 +4,10 @@
   width: 100%;
   display: grid;
   grid-template-columns: 2fr 1fr;
-  gap: 80px;
+  gap: 16px;
   font-family: "Pretendard";
   align-items: start;
+  box-sizing: border-box;
 }
 
 .leftSection {
@@ -14,6 +15,7 @@
   flex-direction: column;
   height: 100%;
   justify-content: center;
+  width: 100%;
 }
 
 .rightSection {
@@ -21,6 +23,7 @@
   flex-direction: column;
   gap: 15px;
   height: 100%;
+  width: 100%;
 }
 
 .wordCloudSection {
@@ -33,6 +36,7 @@
   flex-direction: column;
   align-items: center;
   margin-bottom: 0;
+  box-sizing: border-box;
 }
 
 .noresultmsg {
