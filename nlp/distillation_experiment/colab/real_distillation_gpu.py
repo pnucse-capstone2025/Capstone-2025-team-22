@@ -1209,8 +1209,8 @@ def main():
         
         print("\n🎉 실제 Knowledge Distillation 실험 완료!")
         print("📁 결과 파일:")
-        print("  - ../results/models/real_distilled_koKeyBERT.pt")
-        print("  - ../results/plots/real_distillation_results.png")
+        print("  - ../results/models/distilled_koKeyBERT.pt")
+        print("  - ../results/plots/distillation_results.png")
         
     except Exception as e:
         print(f"❌ 실험 중 오류 발생: {e}")
