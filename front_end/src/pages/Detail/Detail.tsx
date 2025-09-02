@@ -12,7 +12,9 @@ export const DetailPage = () => {
   const currentData = id === "2" ? mockDataNoKeywords : mockData;
   const keywords = currentData.key_word;
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(
+    keywords.length > 0 ? keywords[0] : null
+  );
   const navigate = useNavigate();
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
@@ -34,32 +36,27 @@ export const DetailPage = () => {
       <Drawer isOpen={drawerOpen} onToggle={toggleDrawer} />
 
       <div className={styles.detailWrapper}>
+        <h3 className={styles.contentTitle}>키워드 분석 결과</h3>
         <div className={styles.keywordBox}>
-          <p className={styles.keywordContent}>
-            {keywords.length > 0 ? (
-              <>
-                키워드 :{" "}
-                {keywords.map((kw: string, i: number) => (
-                  <span
-                    key={i}
-                    className={styles.highlight}
-                    style={{
-                      cursor: "pointer",
-                      fontWeight: selectedKeyword === kw ? "bold" : "normal",
-                    }}
-                    onClick={() =>
-                      setSelectedKeyword(selectedKeyword === kw ? null : kw)
-                    }
-                  >
-                    {kw}
-                    {i < keywords.length - 1 && ",\u00A0"}
-                  </span>
-                ))}{" "}
-              </>
-            ) : (
-              <span className={styles.highlight}>추출된 키워드가 없습니다</span>
-            )}
-          </p>
+          {keywords.length > 0 ? (
+            <div className={styles.keywordButtons}>
+              {keywords.map((kw: string, i: number) => (
+                <button
+                  key={i}
+                  className={`${styles.keywordButton} ${
+                    selectedKeyword === kw ? styles.selected : ""
+                  }`}
+                  onClick={() =>
+                    setSelectedKeyword(selectedKeyword === kw ? null : kw)
+                  }
+                >
+                  {kw}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span className={styles.highlight}>추출된 키워드가 없습니다</span>
+          )}
         </div>
         <div className={styles.textContent}>
           <TextHighlighter
@@ -67,6 +64,8 @@ export const DetailPage = () => {
             hoveredKeyword={selectedKeyword}
           />
         </div>
+        <div className={styles.textContent}></div>
+        <h3 className={styles.contentTitle}>품사별 분석 결과</h3>
         <div className={styles.detailContainer}>
           <WordCloudPage
             nounWords={currentData.noun}

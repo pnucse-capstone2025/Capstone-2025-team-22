@@ -18,21 +18,15 @@
   color: #171b26;
   width: 1000px;
   margin: auto;
-  margin-top: 80px;
+  margin-top: 40px;
   gap: 15px;
 }
 
-.keywordBox {
-  width: 100%;
-  border-radius: 8px;
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
+.contentDescription {
+  margin-top: -18px;
+  margin-bottom: 12px;
+  font-size: 16px;
 }
-
 .keywordContent {
   color: #abaeb4;
   font-size: 20px;
@@ -43,9 +37,7 @@
 
 .textContent {
   width: 100%;
-  margin-top: 12px;
   padding: 16px;
-  //background-color: #f9fafb;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   color: #374151;
@@ -57,6 +49,7 @@
 .detailContainer {
   width: 100%;
   box-sizing: border-box;
+  margin-bottom: 40px;
 }
 
 .hamburgerBtn {
@@ -143,4 +136,42 @@
   padding: 0 6px;
   border-radius: 4px;
   font-size: 25px;
+}
+
+.contentTitle {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1b1b1b;
+}
+
+.keywordButtons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.keywordButton {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-size: 18px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+  }
+
+  &.selected {
+    background: #3ec1d3;
+    border-color: #3ec1d3;
+    color: white;
+  }
 }

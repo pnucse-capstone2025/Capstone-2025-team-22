@@ -72,7 +72,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3ec1d3, #23c8ef);
+  background: #3ec1d3;
   color: #ffffff;
   font-size: 20px;
   border: none;
@@ -80,12 +80,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 15px rgba(62, 193, 211, 0.4);
+  //box-shadow: 0 4px 15px rgba(62, 193, 211, 0.4);
   transition: all 0.3s ease;
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(62, 193, 211, 0.6);
+    //box-shadow: 0 6px 20px rgba(62, 193, 211, 0.6);
   }
 
   &.active {

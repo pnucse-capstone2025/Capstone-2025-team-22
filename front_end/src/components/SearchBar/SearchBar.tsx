@@ -12,7 +12,6 @@ export default function SearchBar({ onSearch, className }: SearchBarProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [minHeight, setMinHeight] = useState<number>(0);
 
-
   useEffect(() => {
     const ta = textareaRef.current;
     if (ta) {
@@ -39,18 +38,24 @@ export default function SearchBar({ onSearch, className }: SearchBarProps) {
   };
 
   return (
-    <form className={`${styles.searchBar} ${className || ''}`} onSubmit={handleSubmit}>
-      <textarea
-        ref={textareaRef}
-        className={styles.searchInput}
-        placeholder="분석을 원하시는 텍스트를 넣어주세요"
-        value={value}
-        onChange={handleChange}
-        rows={1}
-      />
-      <button type="submit" className={styles.mainButton}>
-        분석
+    <div className={styles.searchBarContainer}>
+      <form className={`${styles.searchBar} ${className || ''}`} onSubmit={handleSubmit}>
+        <textarea
+          ref={textareaRef}
+          className={styles.searchInput}
+          placeholder="분석을 원하시는 텍스트를 넣어주세요"
+          value={value}
+          onChange={handleChange}
+          rows={1}
+        />
+      </form>
+      <button 
+        type="button" 
+        className={styles.analyzeButton}
+        onClick={() => onSearch(value.trim())}
+      >
+        분석하기
       </button>
-    </form>
+    </div>
   );
 }
