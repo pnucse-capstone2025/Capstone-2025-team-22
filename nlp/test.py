@@ -4,15 +4,8 @@ from kobert_tokenizer import KoBERTTokenizer
 from transformers import BertConfig
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import numpy as np
+from distillation_experiment.distill_model import DistillKoKeyBERT
 
-# DistillKoKeyBERT import 추가
-try:
-    from distillation_experiment.distill_model import DistillKoKeyBERT
-except ImportError:
-    try:
-        from distill_model import DistillKoKeyBERT
-    except ImportError:
-        DistillKoKeyBERT = None
 
 import argparse
 import logging
@@ -615,7 +608,7 @@ def test_with_distill_kokeybert(test_dataset, args, logger, device=None):
                 # 정확도 계산
                 batch_acc = (padded == bio_tags.to(device)).float()[text_attention_mask.to(device).bool()].mean()
                 total_acc += batch_acc.item()
-                
+
             except Exception as e:
                 logger.error(f"모델 추론 오류: {e}")
                 continue

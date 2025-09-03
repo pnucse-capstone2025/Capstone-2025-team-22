@@ -252,3 +252,5 @@ db_data/
 *.temp
 .cache/
 .temp/
+
+results/
