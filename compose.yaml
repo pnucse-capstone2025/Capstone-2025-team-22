@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - "/Volumes/SSD/graduation_assignment/database:/var/lib/postgresql/data"
+      - "/Users/chahyunlee/workspace/2025졸업과제/exe"
     networks:
       - kokeybert
 

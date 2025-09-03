@@ -3,10 +3,10 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import torch
+import torch, json
 
 from app import models, schemas, crud, database
-from app.text_analysis import extract_pos_frequencies
+from app.text_analysis import extract_nouns_verbs_adjectives
 from app.database import Base, engine
 from app.nlp.model import KoKeyBERT
 from app.nlp.kobert_tokenizer.kobert_tokenizer import KoBERTTokenizer
@@ -35,31 +35,81 @@ model.eval()
 def extract_keywords_from_text(text: str):
     return model.extract_keywords(text, tokenizer)
 
-@app.post("/extract_keywords")
-def extract_keywords(text: str = Form(...), db: Session = Depends(database.get_db)):
-    user_input = schemas.UserInputCreate(text=text)
-    crud.create_user_input(db=db, user_input=user_input)
-
-    pos_result = extract_pos_frequencies(text)
+def extract_nva(text: str):
+    pos_result = extract_nouns_verbs_adjectives(text)
     nouns = list(pos_result['nouns'].keys())
     verbs = list(pos_result['verbs'].keys())
     adjectives = list(pos_result['adjectives'].keys())
-    keywords = extract_keywords_from_text(text)
-    print("추출된 키워드:", keywords)
+    return nouns, verbs, adjectives
 
+def save_pos_result_to_db(nouns, verbs, adjectives, keyword, user_input_id: int, db: Session):
     pos_result_db = schemas.POSResultCreate(
-        noun=", ".join(nouns),
-        verb=", ".join(verbs),
-        adjective=", ".join(adjectives)
+        user_input_id=user_input_id,
+        noun=", ".join(nouns) if nouns else "",
+        verb=", ".join(verbs) if verbs else "",
+        adjective=", ".join(adjectives) if adjectives else "",
+        keyword=", ".join(keyword) if isinstance(keyword, (list, tuple, set)) else str(keyword or "")
     )
     crud.create_pos_result(db=db, result=pos_result_db)
+
+@app.get("/recent_results")
+def recent_results(db: Session = Depends(database.get_db)):
+    results = crud.get_recent_pos_results(db)
+    response = []
+
+    for result in results:
+        user_input_text = db.query(models.UserInput).filter(models.UserInput.index == result.user_input_id).first()
+        response.append({
+            "id": result.user_input_id, # Frontend에서 `id`로 참조할 수 있도록 `user_input_id`를 반환
+            "text": user_input_text.text if user_input_text else "",
+            "created_at": result.created_at.isoformat(), # 저장 날짜 추가
+            "nouns": result.noun.split(", ") if result.noun else [],
+            "verbs": result.verb.split(", ") if result.verb else [],
+            "adjectives": result.adjective.split(", ") if result.adjective else [],
+            "keywords": result.keyword.split(", ") if result.keyword and result.keyword.strip() else [],
+        })
+
+    return JSONResponse(content={"results": response})
+
+@app.get("/analysis_results/{user_input_id}")
+def get_analysis_results(user_input_id: int, db: Session = Depends(database.get_db)):
+    user_input_db = db.query(models.UserInput).filter(models.UserInput.index == user_input_id).first()
+    pos_result_db = db.query(models.PosResult).filter(models.PosResult.user_input_id == user_input_id).first()
+
+    if not user_input_db or not pos_result_db:
+        return JSONResponse(content={"detail": "Analysis result not found"}, status_code=404)
+
+    return JSONResponse(content={
+        "id": user_input_db.index,
+        "text": user_input_db.text,
+        "created_at": pos_result_db.created_at.isoformat(),
+        "nouns": pos_result_db.noun.split(", ") if pos_result_db.noun else [],
+        "verbs": pos_result_db.verb.split(", ") if pos_result_db.verb else [],
+        "adjectives": pos_result_db.adjective.split(", ") if pos_result_db.adjective else [],
+        "keywords": pos_result_db.keyword.split(", ") if pos_result_db.keyword and pos_result_db.keyword.strip() else [],
+        "noun_count": len(pos_result_db.noun.split(", ") if pos_result_db.noun else []),
+        "verb_count": len(pos_result_db.verb.split(", ") if pos_result_db.verb else []),
+        "adjective_count": len(pos_result_db.adjective.split(", ") if pos_result_db.adjective else []),
+    })
+
+@app.post("/extract_keywords")
+def extract_keywords(text: str = Form(...), db: Session = Depends(database.get_db)):
+    user_input = schemas.UserInputCreate(text=text)
+    db_user_input = crud.create_user_input(db=db, user_input=user_input)
+
+    nouns, verbs, adjectives = extract_nva(text)
+    keyword = extract_keywords_from_text(text)
+    save_pos_result_to_db(nouns, verbs, adjectives, keyword, db_user_input.index, db)
 
     return JSONResponse(content={
         "text": text,
         "nouns": nouns,
         "verbs": verbs,
         "adjectives": adjectives,
-        "keywords": list(keywords)
+        "keywords": list(keyword) if keyword else [], # 빈 set일 경우 빈 리스트 반환
+        "noun_count": len(nouns),
+        "verb_count": len(verbs),
+        "adjective_count": len(adjectives)
     })
 
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

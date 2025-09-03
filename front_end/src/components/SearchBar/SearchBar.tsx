@@ -39,7 +39,10 @@ export default function SearchBar({ onSearch, className }: SearchBarProps) {
 
   return (
     <div className={styles.searchBarContainer}>
-      <form className={`${styles.searchBar} ${className || ''}`} onSubmit={handleSubmit}>
+      <form
+        className={`${styles.searchBar} ${className || ""}`}
+        onSubmit={handleSubmit}
+      >
         <textarea
           ref={textareaRef}
           className={styles.searchInput}
@@ -49,8 +52,8 @@ export default function SearchBar({ onSearch, className }: SearchBarProps) {
           rows={1}
         />
       </form>
-      <button 
-        type="button" 
+      <button
+        type="submit"
         className={styles.analyzeButton}
         onClick={() => onSearch(value.trim())}
       >

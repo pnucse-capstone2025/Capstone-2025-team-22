@@ -40,7 +40,7 @@ def extract_full_verbs(text):
 
     return full_verbs
 
-def extract_pos_frequencies(text):
+def extract_nouns_verbs_adjectives(text):
     mecab = MeCab()
     tokens = mecab.pos(text)
 
@@ -55,7 +55,7 @@ def extract_pos_frequencies(text):
     }
 
 # sample_text = "숙제를 끝내버렸다."
-# print(extract_pos_frequencies(sample_text))
-
+# print(extract_nouns_verbs_adjectives(sample_text))
+#
 # mecab = MeCab()
 # print(mecab.pos(sample_text))
