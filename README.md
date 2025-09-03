@@ -1,6 +1,7 @@
 # 부산대학교 정보컴퓨터공학부 2025 전기 졸업과제 
 
-![KoKeyBERT](/src/img/model_image.png)
+<img width="100px" alt="model_image" src="./src/img/model_image.png" />
+
 **KoKeyBERT (코키 버트) (웰시코기 + 버트)**
 
 ## 1. 개요
@@ -31,13 +32,13 @@
 |:-------:|:-------:|:-------:|:-------:|
 | 1주차 (2025.5.5 ~ 2025.5.11)| 데이터 | 데이터 전처리 | ✅ |
 | 2주차 (2025.5.12 ~ 2025.5.18)| 데이터 | 데이터 전처리 | ✅ |
-| 3주차 (2025.5.19 ~ 2025.5.25)| 모델 | 모델 설계 | |
-| 4주차 (2025.5.26 ~ 2025.6.1)| 모델 | 모델 구현 | |
-| 5주차 (2025.6.30 ~ 2025.7.6)| 모델 | 모델 학습 | |
-| 6주차 (2025.7.7 ~ 2025.7.13)| 모델 | 모델 학습 | |
-| 7주차 (2025.7.14 ~ 2025.7.20)| 모델 | 모델 평가 | |
-| 8주차 (2025.7.21 ~ 2025.7.27)| 논문 | 키워드 확장 방법론 학습 | |
-| 9주차 (2025.7.28 ~ 2025.8.3)| 논문 | 키워드 확장 방법론 설계 | |
+| 3주차 (2025.5.19 ~ 2025.5.25)| 모델 | 모델 설계 |✅ |
+| 4주차 (2025.5.26 ~ 2025.6.1)| 모델 | 모델 구현 | ✅|
+| 5주차 (2025.6.30 ~ 2025.7.6)| 모델 | 모델 학습 | ✅|
+| 6주차 (2025.7.7 ~ 2025.7.13)| 모델 | 모델 학습 | ✅|
+| 7주차 (2025.7.14 ~ 2025.7.20)| 모델 | 모델 평가 | ✅|
+| 8주차 (2025.7.21 ~ 2025.7.27)| 논문 | 키워드 확장 방법론 학습 |✅ |
+| 9주차 (2025.7.28 ~ 2025.8.3)| 논문 | 키워드 확장 방법론 설계 |✅ |
 | 10주차 (2025.8.4 ~ 2025.8.10)| 논문 | 키워드 확장 방법론 구현 | |
 | 11주차 (2025.8.11 ~ 2025.8.17)| 논문 | 키워드 확장 방법론 평가 | |
 | 12주차 (2025.8.18 ~ 2025.8.24)| 모델 | 모델 API화 | |
@@ -53,7 +54,7 @@ NLP
 python 3.12.9
 torch 2.5.1(stable)
 transformers 4.49.0
-torchcrf 1.1.0
+torchcrf 1.1.0 (deprecated)
 
 BackEnd
 
@@ -73,7 +74,7 @@ FrontEnd
 | train | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_before_cleaning.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_after_cleaning.png" />|
 | test | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_before_cleaning.png" /> | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_after_cleaning.png" />|
 
-## 5. 학습
+## 5. Teacher 모델 학습
 
 ### 5.1 학습 디렉토리로 이동
 
@@ -119,50 +120,122 @@ python train.py --train_data_path training_data.json \
 | Loss | Accuracy | 
 | <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_loss.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_accuracy.png" /> |
 
-## 6. 평가
+## 6. Student 모델 학습
 
-### 6.1 실험 환경 및 데이터
+### 6.1 학습 디렉토리로 이동
+
+```bash
+cd PROJECT_DIR/nlp/colab/distillation_experiment
+```
+
+### 6.2 학습 실행
+
+```bash
+python real_distillation_gpu.py
+```
+
+### 6.3 학습 세부사항
+
+- Batch Size: `64`
+- Train/Validation Split: `90% / 10%`
+- Number of Epochs: `5`
+- Learning Rate: `2e-5`
+- Validation Frequency: `1` epoch마다 검증 수행
+- Model Saving Criteria:
+  - F1 Score가 최고 성능 모델보다 높아질 경우 Best 모델로 저장
+- Random Seed: `42`
+- Device: `cuda` (Google Colab A100 환경)
+- Data Loader Workers: `0`
+- 학습 소요 시간: 약 `1시간`
+
+### 6.4 손실함수
+실제 지식증류에서는 다음 세 가지 항으로 구성된 결합 손실을 사용했습니다.
+
+- **Temperature**: `4.0`
+- **가중치**: `α=0.7`(KL), `β=0.2`(Task), `γ=0.1`(Cosine)
+
+총 손실:
+```text
+L_total = α · L_KL + β · L_task + γ · L_cos
+```
+
+- **KL Divergence (L_KL)**: teacher logits `z_t`, student logits `z_s`에 대해 soft target을 사용한 토큰 단위 KL. attention mask로 유효 토큰만 집계하며, `T^2` 스케일을 적용합니다.
+```text
+L_KL = KL( log_softmax(z_s / T), softmax(z_t / T) ) · T^2
+```
+
+- **Task Consistency (L_task)**: 각 토큰의 최대 확률 간 MSE. attention mask로 유효 토큰에서만 계산합니다.
+```text
+L_task = MSE( max_softmax(z_s), max_softmax(z_t) )
+```
+기존 MLM 보다 Task specific한 모델을 만들기 위해 사용했습니다.
+
+- **Hidden Alignment (L_cos)**: teacher/student의 hidden states를 코사인 임베딩 손실로 정렬합니다.
+```text
+L_cos = CosineEmbeddingLoss( h_s_proj, h_t, target=1 )
+```
+
+### 6.5 학습 결과
+
+<img width="600px" alt="distillation results" src="./nlp/distillation_experiment/results/plots/real_distillation_results.png" />
+
+- 5epoch 동안 전반적으로 loss가 줄어드는 추세가 유지되었습니다.
+- 흥미로운 점은 Task Loss 덕분에 원래 모델보다 Accuracy가 향상된 점입니다.
+- 추론 속도는 원래 모델보다 약 5.75배 빠릅니다.
+
+## 7. 평가
+
+### 7.1 실험 환경 및 데이터
 - 테스트 데이터: 총 4845개 샘플
-- 평가 모델: KeyBERT(3개 키워드), KeyBERT(6개 키워드), KoKeyBERT
+- 평가 모델: KeyBERT(1개 키워드), KeyBERT(3개 키워드), KeyBERT(5개 키워드), KoKeyBERT, DistillKoKeyBERT
 - 평가 기준: Precision, Recall, F1 Score, Confusion Matrix(혼동 행렬)
 
-### 6.2 모델별 성능 요약
+### 7.2 모델별 성능 요약
 
 | 모델명                | Precision | Recall | F1 Score | TP    | FP     | FN     | 추론 시간(T4 기준) |
 |----------------------|-----------|--------|----------|-------|--------|--------|--------|
-| KeyBERT(3words)      | 0.0807    | 0.1420 | 0.1029   | 2316  | 26378  | 13990  | 3분57초 |
-| KeyBERT(6words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  | 4분 4초 |
-| KoKeyBERT            | **0.4848<br>(40%p)**    | **0.2263<br>(8%p)** | **0.3086<br>(20%p)**   | **3690**  | **3921**   | **12616**  | **1분 38초<br>(x2.4)** |
+| KeyBERT(1word)      | 0.1296    | 0.0385 | 0.0594   | 628  | 4216  | 15678  | 11분42초 |
+| KeyBERT(3words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  | 12분43초 |
+| KeyBERT(5words) (baseline)      | 0.0880    | 0.1296 | 0.1048   | 2113  | 21893  | 14193  | 11분 52초 |
+| KoKeyBERT            | 0.4848<br>    | 0.2263<br> | 0.3086<br>   | 3690  | 3921   | 12616  | 6분 42초<br> |
+| DistillKoKeyBERT     | **0.3640<br>(24%p)**    | **0.2877<br>(16%p)** | **0.3214<br>(22%p)**   | **9384**  | **16396**   | **23228**  | **2분 54초<br>(x4)** |
 
-- **KeyBERT(3words)**: 키워드 개수를 3개로 제한한 경우, Precision은 낮으나 Recall이 상대적으로 높음.
-- **KeyBERT(6words)**: 키워드 개수를 6개로 확장하면 Precision은 소폭 감소하나, Recall은 증가.
+- **KeyBERT(1words)**: 키워드 개수를 1개로 제한한 경우.
+- **KeyBERT(3words)**: 키워드 개수를 3개로 제한한 경우.
+- **KeyBERT(5words)**: 키워드 개수를 5개로 확장한 경우.
+
 - **KoKeyBERT**: Precision, Recall, F1 모두 KeyBERT 대비 월등히 높음. 특히 Precision이 크게 향상됨.
+- **DistillKoKeyBERT**: Precision은 KoKeyBERT보다 낮으나, Recall은 증가하며, F1 Score는 KoKeyBERT 대비 약간의 향상을 보임. 특히 Recall이 크게 향상됨. 추론 속도는 Baseline 대비 약 4배 빠름.
 
-### 6.3 시각화 결과
+### 7.3 시각화 결과
 
 - **모델별 혼동 행렬**
 
-|KoKeyBERT|KeyBERT(3words)|KeyBERT(6words)|
-|:---:|:---:|:---:|
- | ![KoKeyBERT Confusion Matrix](./src/img/test/kokeybert_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./src/img/test/keybert-3words_confusion_matrix.png) | ![KeyBERT(6words) Confusion Matrix](./src/img/test/keybert-6words_confusion_matrix.png) | 
+|KeyBERT(1words)|KeyBERT(3words)|KeyBERT(5words)|KoKeyBERT|DistillKoKeyBERT|
+|:---:|:---:|:---:|:---:|:---:|
+ | ![KeyBERT(1words) Confusion Matrix](./nlp/results/plots/keybert_1_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./nlp/results/plots/keybert_3_confusion_matrix.png) | ![KeyBERT(5words) Confusion Matrix](./nlp/results/plots/keybert_5_confusion_matrix.png) | ![KoKeyBERT Confusion Matrix](./nlp/results/plots/kokeybert_confusion_matrix.png) | ![DistillKoKeyBERT Confusion Matrix](./nlp/results/plots/distill_kokeybert_confusion_matrix.png) |
 
 - #### 성능 지표
 
 | Precision | Recall | F1 Score | Inference Time |
 |-----------|---------|-----------|-----------|
-| ![Precision Comparison](src/img/test/model_performance_comparison_precision.png) | ![Recall Comparison](src/img/test/model_performance_comparison_recall.png) | ![F1 Score Comparison](src/img/test/model_performance_comparison_f1.png) | ![Inference Time Comparison](src/img/test/inference_time_comparison.png) |
+| ![Precision Comparison](./nlp/results/plots/precision_comparison_by_progress.png) | ![Recall Comparison](./nlp/results/plots/recall_comparison_by_progress.png) | ![F1 Score Comparison](./nlp/results/plots/f1_comparison_by_progress.png) | ![Inference Time Barplot](./nlp/results/plots/inference_time_barplot.png) |
 
-### 6.4 분석
+### 7.4 분석
 
-- #### 6.4.1 주요 성능 향상
+- #### 7.4.1 주요 성능 향상 (KoKeyBERT)
   1. F1 Score 개선: KoKeyBERT는 KeyBERT 대비 F1 Score에서 약 20%p(퍼센트 포인트) 향상이라는 매우 의미 있는 성능 개선을 달성했다. 이는 모델의 정확도(Precision)와 재현율(Recall)이 균형 있게 크게 향상되었음을 의미한다.
-  2. 추론 속도 향상: 동일 GPU 환경(NVIDIA T4)에서 비교했을 때, KoKeyBERT는 KeyBERT 대비 약 2.5배 빠른 추론 속도를 보였으며, 이는 효율성 측면에서도 뛰어난 성능을 입증하는 결과이다. 특히 이러한 속도 향상은 다음과 같은 데이터 처리 방식의 차이를 고려할 때 KoKeyBERT 모델 자체의 높은 연산 효율성을 더욱 부각시킨다. KeyBERT는 라이브러리 설계상 추론 시 전체 데이터를 메모리에 사전 적재하므로 데이터 로딩으로 인한 병목 현상이 거의 발생하지 않는다. 반면, KoKeyBERT는 표준적인 Dataloader 클래스를 사용하여 배치(batch) 단위로 데이터를 처리하는 과정에서 상대적으로 데이터 로딩 및 전처리로 인한 병목이 발생할 가능성이 있다. KoKeyBERT가 이러한 잠재적인 데이터 처리 병목에도 불구하고 KeyBERT보다 우월한 추론 속도를 달성했다는 점은 그 자체의 연산 효율성이 매우 뛰어남을 시사한다.
+  2. 추론 속도 향상: 동일 GPU 환경(NVIDIA T4)에서 비교했을 때, KoKeyBERT는 KeyBERT 대비 약 2.5배 빠른 추론 속도를 보였으며, 이는 효율성 측면에서도 뛰어난 성능을 입증하는 결과이다. 특히 이러한 속도 향상은 다음과 같은 데이터 처리 방식의 차이를 고려할 때 KoKeyBERT 모델 자체의 높은 연산 효율성을 더욱 부각시킨다. KeyBERT는 라이브러리 설계상 추론 시 전체 데이터를 메모리에 사전 적재하므로 데이터 로딩으로 인한 병목 현상이 거의 발생하지 않는다. 반면, KoKeyBERT는 표준적인 Dataloader 클래스를 사용하여 배치(batch) 단위로 데이터를 처리하는 과정에서 상대적으로 데이터 로딩 및 전처리로 인한 병목이 발생할 가능성이 있다. KoKeyBERT가 이러한 잠재적인 데이터 처리 병목에도 불구하고 KeyBERT보다 빠른 추론 속도를 달성했다는 점은 그 자체의 연산 효율성이 매우 뛰어남을 시사한다.
 
 - #### 심층 분석
-  1. KeyBERT의 키워드 개수별 성능 변화: KeyBERT의 경우, 추출 대상 키워드 개수를 증가시켜도 F1 Score의 유의미한 개선으로 이어지지 않았으며, 오히려 과도하게 많은 키워드를 추천하려 할 때 정확도(Precision)가 하락하는 경향이 관찰되었다.
+  1. KeyBERT의 키워드 개수별 성능 변화: KeyBERT의 경우, 추출 대상 키워드 개수를 증가시켜도 F1 Score의 유의미한 개선으로 이어지지 않았으며, 오히려 과도하게 많은 키워드를 추천하려 할 때 Precision이 하락하는 경향이 관찰되었다.
   2. 입력 데이터 길이에 따른 성능 변화: 평가 데이터가 입력 텍스트의 길이를 기준으로 오름차순 정렬되어 있어, 평가 단계(step)가 진행됨에 따라 입력 텍스트 길이가 증가하는 특성이 있었다. 이로 인해 KoKeyBERT와 KeyBERT 모든 모델에서 텍스트 길이가 길어질수록 전반적인 성능 지표가 점진적으로 하락하는 경향이 공통적으로 나타났다.
 
-- #### 6.4.2 한계점
+- #### 7.4.2 주요 성능 향상 (DistillKoKeyBERT)
+  1. F1 Score 개선: DistillKoKeyBERT는 Distillation에도 불구하고 KeyBERT 대비 F1 Score에서 약 2%p 향상을 보였다. 또한 모델의 Precision 과 Recall이 균형을 이루게 되었다.
+  2. 추론 속도 향상: 동일 Macbook m3 air 환경에서 비교했을 때, DistillKoKeyBERT는 KeyBERT 대비 테스트 환경에서 약 2.2배 빠른 추론 속도를 보였다.
+
+- #### 7.4.3 한계점
 
 1.  키워드 개수 분포 불균형
 
@@ -176,19 +249,19 @@ python train.py --train_data_path training_data.json \
 2.  정답 키워드 특성 (명사 중심): 사용된 데이터셋의 정답 키워드가 주로 명사로 구성되어 있다는 점을 고려할 때, EM(Exact Match) 기반의 평가는 명사 추출에 강점을 보이는 모델에 유리하게 작용할 수 있다. KeyBERT가 의미 있는 구(phrase) 형태의 키워드를 추출하더라도, 정답이 명사 중심일 경우 평가에서 불리했을 가능성을 고려해야 한다. 
 
 
-## 7. 사용법
+## 7. 사용법 (DistillKoKeyBERT)
 
 1. 라이브러리 임포트
 ```python
-from model import KoKeyBERT
+from distill_model import DistillKoKeyBERT
 from transformers import BertConfig
 from kobert_tokenizer import KoBERTTokenizer
 ```
 2. 모델 및 토크나이저 로드(CPU 환경 가정)
 ```python
 config = BertConfig.from_pretrained('skt/kobert-base-v1')
-model = KoKeyBERT(config=config)
-model.load_state_dict(torch.load('src/model_state/best_model.pt', map_location=torch.device('cpu'), weights_only=True))
+model = DistillKoKeyBERT(config=config)
+model.load_state_dict(torch.load('distill_KoKeyBERT.pt', map_location=torch.device('cpu'), weights_only=True))
 tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
 ```
 3. model.extract_keywords 함수 사용
@@ -217,3 +290,21 @@ while True:
 |<a href="https://github.com/JakeFRCSE"><img width="100px" alt="박준혁" src="https://avatars.githubusercontent.com/u/162955476?v=4" /></a>|<a href="https://github.com/chahyunlee"><img width="100px" alt="이차현" src="https://avatars.githubusercontent.com/u/163325051?v=4" /></a>|<a href="https://github.com/LimSungPyo"><img width="100px" alt="임성표" src="https://avatars.githubusercontent.com/u/132332450?v=4" /></a>|
 | eppi001004@gmail.com | chahyun20@naver.com | lsp11121@gmail.com |
 | 자연어처리 | 프론트엔드 | 백엔드 |
+
+## 9. 참고 자료
+software: 
+
+1.[KoBERT](https://github.com/SKTBrain/KoBERT)
+
+paper:
+
+1. [DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter](https://arxiv.org/pdf/1910.01108)
+
+2. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805)
+
+3. [A Unified Approach to Interpreting Model Predictions](https://arxiv.org/pdf/1705.07874)
+4. [What does BERT look at? An analysis of BERT's attention](https://arxiv.org/pdf/1906.04341)
+
+website:
+1. [neuronpedia](https://www.neuronpedia.org)
+2. [SHAP library](https://shap.readthedocs.io/en/latest/example_notebooks/text_examples/sentiment_analysis/Positive%20vs.%20Negative%20Sentiment%20Classification.html)
