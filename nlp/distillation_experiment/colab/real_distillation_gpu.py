@@ -22,6 +22,64 @@ from typing import List
 
 # test.py 방식 사용으로 전역 collate_fn 제거
 
+def process_model_output(model_output, tags, model_name="Model"):
+    """
+    KoKeyBERT 모델 출력을 처리하여 예측 텐서를 반환합니다.
+    
+    Args:
+        model_output: 모델 출력 (log_likelihood, sequence_of_tags) 또는 sequence_of_tags
+        tags: 정답 태그 텐서 (디바이스 정보를 위해 사용)
+        model_name: 모델 이름 (디버깅용)
+    
+    Returns:
+        torch.Tensor: 예측 태그 텐서
+    """
+    try:
+        if isinstance(model_output, tuple):
+            log_likelihood, sequence_of_tags = model_output
+            
+            # sequence_of_tags를 텐서로 변환
+            if isinstance(sequence_of_tags, list):
+                batch_size = tags.size(0)
+                seq_len = tags.size(1)
+                predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
+                
+                for i, seq in enumerate(sequence_of_tags):
+                    if i < batch_size and len(seq) <= seq_len:
+                        # seq가 이미 텐서인지 확인하고 디바이스 변환
+                        if isinstance(seq, torch.Tensor):
+                            seq_tensor = seq.to(device=tags.device, dtype=torch.long)
+                        else:
+                            seq_tensor = torch.tensor(seq, dtype=torch.long, device=tags.device)
+                        predictions[i, :len(seq)] = seq_tensor
+                return predictions
+            else:
+                return sequence_of_tags
+        else:
+            # 단일 출력인 경우 (sequence_of_tags만 반환)
+            if isinstance(model_output, list):
+                batch_size = tags.size(0)
+                seq_len = tags.size(1)
+                predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
+                
+                for i, seq in enumerate(model_output):
+                    if i < batch_size and len(seq) <= seq_len:
+                        # seq가 이미 텐서인지 확인하고 디바이스 변환
+                        if isinstance(seq, torch.Tensor):
+                            seq_tensor = seq.to(device=tags.device, dtype=torch.long)
+                        else:
+                            seq_tensor = torch.tensor(seq, dtype=torch.long, device=tags.device)
+                        predictions[i, :len(seq)] = seq_tensor
+                return predictions
+            else:
+                return model_output
+    except Exception as e:
+        print(f"⚠️ {model_name} 모델 출력 처리 오류: {e}")
+        # 오류 발생 시 기본값 반환
+        batch_size = tags.size(0)
+        seq_len = tags.size(1)
+        return torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
+
 # 부모 디렉토리 추가 (실제 모델 import를 위해)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)  # distillation_experiment
@@ -109,7 +167,7 @@ def extract_keywords_from_bio_tags(tokens, bio_tags, attention_mask, tokenizer) 
 
 def evaluate_keywords(pred_keywords, true_keywords):
     """
-    예측된 키워드와 실제 키워드를 비교하여 TP, FP, FN을 계산합니다.
+    예측된 키워드와 실제 키워드를 비교하여 confusion matrix를 계산합니다.
     
     Args:
         pred_keywords: 예측된 키워드 리스트
@@ -118,12 +176,13 @@ def evaluate_keywords(pred_keywords, true_keywords):
     Returns:
         tuple: (TP, FP, FN) 값
     """
-    pred_set = set(pred_keywords)
-    true_set = set(true_keywords)
+    # 키워드 정규화: 공백 처리
+    pred_set = {keyword.strip() for keyword in pred_keywords if keyword}
+    true_set = {keyword.strip() for keyword in true_keywords if keyword}
     
-    TP = len(pred_set & true_set)  # 교집합
-    FP = len(pred_set - true_set)  # 예측했지만 정답이 아닌 것
-    FN = len(true_set - pred_set)  # 정답이지만 예측하지 못한 것
+    TP = len(pred_set.intersection(true_set))
+    FP = len(pred_set - true_set)
+    FN = len(true_set - pred_set)
     
     return TP, FP, FN
 
@@ -152,82 +211,6 @@ try:
 except ImportError as e:
     print(f"❌ DistillKoKeyBERT import 실패: {e}")
     sys.exit(1)
-
-class RealDataset(Dataset):
-    """실제 데이터를 처리하는 Dataset"""
-    def __init__(self, data, tokenizer, max_length=512):
-        self.data = data
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        item = self.data[idx]
-        text = item['text']
-        keywords = item['keyword']
-        
-        # 토크나이징 (패딩 없이)
-        encoding = self.tokenizer(
-            text,
-            padding=False,  # 패딩을 collate_fn에서 처리
-            truncation=True,
-            max_length=self.max_length,
-            return_tensors='pt'
-        )
-        
-        input_ids = encoding['input_ids'].squeeze(0)
-        attention_mask = encoding['attention_mask'].squeeze(0)
-        
-        # BIO 태그 생성 (간단한 방식)
-        tags = self.create_bio_tags(text, keywords, input_ids)
-        
-        return {
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'tags': tags,
-            'text': text,
-            'keywords': keywords
-        }
-    
-    def create_bio_tags(self, text, keywords, input_ids):
-        """키워드 기반으로 BIO 태그 생성"""
-        tags = torch.full((len(input_ids),), 2, dtype=torch.long)  # 모두 O로 초기화
-        
-        try:
-            # 토큰을 텍스트로 변환
-            tokens = self.tokenizer.convert_ids_to_tokens(input_ids)
-            
-            # 각 키워드에 대해 BIO 태그 설정
-            for keyword in keywords:
-                if not keyword or not isinstance(keyword, str):
-                    continue
-                    
-                keyword_tokens = self.tokenizer.tokenize(keyword)
-                if not keyword_tokens:
-                    continue
-                    
-                # 토큰 시퀀스에서 키워드 찾기
-                for i in range(len(tokens) - len(keyword_tokens) + 1):
-                    match = True
-                    for j, kw_token in enumerate(keyword_tokens):
-                        if i + j >= len(tokens) or tokens[i + j] != kw_token:
-                            match = False
-                            break
-                    
-                    if match:
-                        tags[i] = 0  # B 태그
-                        for j in range(1, len(keyword_tokens)):
-                            if i + j < len(tags):
-                                tags[i + j] = 1  # I 태그
-                        break
-        except Exception as e:
-            print(f"⚠️ BIO 태그 생성 중 오류: {e}")
-            # 오류 발생시 모든 태그를 O로 설정
-            tags = torch.full((len(input_ids),), 2, dtype=torch.long)
-        
-        return tags
 
 class OptimizedDistillationLoss(nn.Module):
     """최적화된 Knowledge Distillation Loss"""
@@ -562,12 +545,11 @@ def train_real_distillation(teacher_model, student_model, train_loader, test_loa
                     if key in loss_components:
                         epoch_components[key].append(loss_components[key])
             
-            # 진행 상황 출력 (더 자주 출력)
-            if batch_idx % 20 == 0:
-                print(f"  Batch {batch_idx:3d}: Total={loss_components['total_loss']:.4f}, "
-                      f"KL={loss_components['kl_loss']:.4f}, "
-                      f"Task={loss_components['task_loss']:.4f}, "
-                      f"Cosine={loss_components['cosine_loss']:.4f}")
+            # 진행 상황 출력 
+            print(f"  Batch {batch_idx:3d}: Total={loss_components['total_loss']:.4f}, "
+                  f"KL={loss_components['kl_loss']:.4f}, "
+                  f"Task={loss_components['task_loss']:.4f}, "
+                  f"Cosine={loss_components['cosine_loss']:.4f}")
             
             # GPU 메모리 정리 (더 자주)
             if batch_idx % 50 == 0:
@@ -577,8 +559,8 @@ def train_real_distillation(teacher_model, student_model, train_loader, test_loa
         avg_loss = np.mean(epoch_losses) if epoch_losses else 0
         epoch_time = datetime.now() - epoch_start
         
-        # 검증 메트릭 계산 (빠른 평가) - 2에폭마다만 실행
-        if epoch % 2 == 0:
+        # 검증 메트릭 계산 (빠른 평가) - 1에폭마다만 실행
+        if epoch % 1 == 0:
             val_metrics = evaluate_epoch_accuracy(student_model, test_loader, device, tokenizer, max_batches=64)
             val_f1 = val_metrics['f1']
             val_precision = val_metrics['precision']
@@ -615,7 +597,7 @@ def train_real_distillation(teacher_model, student_model, train_loader, test_loa
         
         print(f"✅ Epoch {epoch+1} 완료:")
         print(f"   평균 Loss: {avg_loss:.4f}")
-        if epoch % 2 == 0:  # 메트릭이 계산된 경우에만 출력
+        if epoch % 1 == 0:  # 메트릭이 계산된 경우에만 출력
             print(f"   📈 F1: {val_f1:.4f}, Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, Accuracy: {val_accuracy:.4f}")
         print(f"   Best Val F1: {best_val_acc:.4f}")
         print(f"   KL Loss: {epoch_summary['components']['kl_loss']:.4f}")
@@ -636,13 +618,17 @@ def train_real_distillation(teacher_model, student_model, train_loader, test_loa
     return training_history, best_model_state, best_val_acc
 
 def evaluate_epoch_accuracy(model, test_loader, device, tokenizer, max_batches=64):
-    """Epoch 중간에 빠른 검증 F1 점수 계산 (키워드 기반)"""
+    """Epoch 중간에 빠른 검증 F1 점수 계산 (키워드 기반) + 토큰 레벨 accuracy"""
     model.eval()
     
     # 키워드 평가를 위한 통계
     total_TP = 0
     total_FP = 0
     total_FN = 0
+    
+    # 토큰 레벨 정확도를 위한 통계
+    total_correct_tokens = 0
+    total_valid_tokens = 0
     
     with torch.no_grad():
         for batch_idx, batch in enumerate(test_loader):
@@ -655,43 +641,29 @@ def evaluate_epoch_accuracy(model, test_loader, device, tokenizer, max_batches=6
             attention_mask = attention_mask.to(device)
             tags = tags.to(device)
             
-            # 예측
+            # 모델을 한 번만 호출하여 모든 정보 추출
             model_output = model(input_ids, attention_mask, tags)
             
-            # KoKeyBERT 모델 출력 처리: (log_likelihood, sequence_of_tags)
-            if isinstance(model_output, tuple):
-                log_likelihood, sequence_of_tags = model_output
-                
-                # 디버깅: 첫 번째 배치에서만 출력 형태 확인
-                if batch_idx == 0:
-                    print(f"🔍 Model output type: {type(model_output)}")
-                    print(f"🔍 sequence_of_tags length: {len(sequence_of_tags)}")
-                    print(f"🔍 Tags shape: {tags.shape}")
-                    print(f"🔍 Attention mask shape: {attention_mask.shape}")
-                
-                # sequence_of_tags를 텐서로 변환
-                if isinstance(sequence_of_tags, list):
-                    batch_size = tags.size(0)
-                    seq_len = tags.size(1)
-                    predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
-                    
-                    for i, seq in enumerate(sequence_of_tags):
-                        if i < batch_size and len(seq) <= seq_len:
-                            predictions[i, :len(seq)] = torch.tensor(seq, dtype=torch.long, device=tags.device)
-                else:
-                    predictions = sequence_of_tags
-            else:
-                # 단일 출력인 경우 처리
-                if isinstance(model_output, list):
-                    batch_size = tags.size(0)
-                    seq_len = tags.size(1)
-                    predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
-                    
-                    for i, seq in enumerate(model_output):
-                        if i < batch_size and len(seq) <= seq_len:
-                            predictions[i, :len(seq)] = torch.tensor(seq, dtype=torch.long, device=tags.device)
-                else:
-                    predictions = model_output
+            # process_model_output 함수를 사용하여 일관성 유지
+            predictions = process_model_output(model_output, tags, "Evaluation")
+            
+            # 디버깅: 첫 번째 배치에서만 출력 형태 확인
+            if batch_idx == 0:
+                print(f"🔍 Model output type: {type(model_output)}")
+                print(f"🔍 Predictions shape: {predictions.shape if hasattr(predictions, 'shape') else 'no shape'}")
+                print(f"🔍 Tags shape: {tags.shape}")
+                print(f"🔍 Attention mask shape: {attention_mask.shape}")
+            
+            # predictions가 올바른 형태인지 확인
+            if not isinstance(predictions, torch.Tensor) or predictions.dim() != 2:
+                print(f"⚠️ Warning: predictions have unexpected format, skipping batch {batch_idx}")
+                continue
+            
+            # 토큰 레벨 정확도 계산 (train.py와 동일한 방식)
+            correct_tokens = (predictions == tags).float()[attention_mask.bool()].sum()
+            valid_tokens = attention_mask.bool().sum()
+            total_correct_tokens += correct_tokens.item()
+            total_valid_tokens += valid_tokens.item()
             
             # 키워드 추출 및 평가
             batch_TP = 0
@@ -762,13 +734,8 @@ def evaluate_epoch_accuracy(model, test_loader, device, tokenizer, max_batches=6
     else:
         f1 = 0.0
     
-    # Accuracy 계산 (키워드 기반)
-    total_predictions = total_TP + total_FP
-    total_actual = total_TP + total_FN
-    if total_predictions + total_actual > 0:
-        accuracy = total_TP / max(total_predictions, total_actual) if max(total_predictions, total_actual) > 0 else 0.0
-    else:
-        accuracy = 0.0
+    # 토큰 레벨 accuracy 계산 (이미 위에서 계산됨)
+    accuracy = total_correct_tokens / total_valid_tokens if total_valid_tokens > 0 else 0.0
     
     return {
         'f1': f1,
@@ -796,6 +763,12 @@ def evaluate_real_models(teacher_model, student_model, test_loader, device, toke
     student_FP = 0
     student_FN = 0
     
+    # 토큰 레벨 정확도를 위한 통계
+    teacher_total_correct_tokens = 0
+    teacher_total_valid_tokens = 0
+    student_total_correct_tokens = 0
+    student_total_valid_tokens = 0
+    
     teacher_times = []
     student_times = []
     
@@ -803,55 +776,44 @@ def evaluate_real_models(teacher_model, student_model, test_loader, device, toke
         for batch_idx, batch in enumerate(test_loader):
             # test.py 방식의 batch 형식: (index, input_ids, attention_mask, tags)
             index, input_ids, attention_mask, tags = batch
+            
+            # 배치 데이터 검증
+            if input_ids.size(0) == 0 or attention_mask.size(0) == 0 or tags.size(0) == 0:
+                print(f"⚠️ 빈 배치 감지 (배치 {batch_idx}), 건너뛰기")
+                teacher_times.append(None)  # 실패 표시로 통계 일관성 유지
+                student_times.append(None)  # 실패 표시로 통계 일관성 유지
+                continue
+                
+            # 텐서를 디바이스로 이동
             input_ids = input_ids.to(device)
             attention_mask = attention_mask.to(device)
             tags = tags.to(device)
             
             # Teacher 평가
-            start_time = time.time()
-            teacher_output = teacher_model(input_ids, attention_mask, tags)
-            teacher_time = time.time() - start_time
-            teacher_times.append(teacher_time)
+            try:
+                start_time = time.time()
+                teacher_output = teacher_model(input_ids, attention_mask, tags)
+                teacher_time = time.time() - start_time
+                teacher_times.append(teacher_time)
+            except Exception as e:
+                print(f"⚠️ Teacher 모델 평가 오류 (배치 {batch_idx}): {e}")
+                teacher_times.append(None)  # 실패 표시로 통계 일관성 유지
+                continue
             
             # Student 평가
-            start_time = time.time()
-            student_output = student_model(input_ids, attention_mask, tags)
-            student_time = time.time() - start_time
-            student_times.append(student_time)
+            try:
+                start_time = time.time()
+                student_output = student_model(input_ids, attention_mask, tags)
+                student_time = time.time() - start_time
+                student_times.append(student_time)
+            except Exception as e:
+                print(f"⚠️ Student 모델 평가 오류 (배치 {batch_idx}): {e}")
+                student_times.append(None)  # 실패 표시로 통계 일관성 유지
+                continue
             
             # KoKeyBERT 모델 출력 처리: (log_likelihood, sequence_of_tags)
-            def process_model_output(model_output, model_name="Model"):
-                if isinstance(model_output, tuple):
-                    log_likelihood, sequence_of_tags = model_output
-                    
-                    # sequence_of_tags를 텐서로 변환
-                    if isinstance(sequence_of_tags, list):
-                        batch_size = tags.size(0)
-                        seq_len = tags.size(1)
-                        predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
-                        
-                        for i, seq in enumerate(sequence_of_tags):
-                            if i < batch_size and len(seq) <= seq_len:
-                                predictions[i, :len(seq)] = torch.tensor(seq, dtype=torch.long, device=tags.device)
-                        return predictions
-                    else:
-                        return sequence_of_tags
-                else:
-                    # 단일 출력인 경우 (sequence_of_tags만 반환)
-                    if isinstance(model_output, list):
-                        batch_size = tags.size(0)
-                        seq_len = tags.size(1)
-                        predictions = torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
-                        
-                        for i, seq in enumerate(model_output):
-                            if i < batch_size and len(seq) <= seq_len:
-                                predictions[i, :len(seq)] = torch.tensor(seq, dtype=torch.long, device=tags.device)
-                        return predictions
-                    else:
-                        return model_output
-            
-            teacher_pred = process_model_output(teacher_output, "Teacher")
-            student_pred = process_model_output(student_output, "Student")
+            teacher_pred = process_model_output(teacher_output, tags, "Teacher")
+            student_pred = process_model_output(student_output, tags, "Student")
             
             # 디버깅: 첫 번째 배치에서만 출력 형태 확인
             if batch_idx == 0:
@@ -869,6 +831,20 @@ def evaluate_real_models(teacher_model, student_model, test_loader, device, toke
             if teacher_pred.dim() != 2 or student_pred.dim() != 2:
                 print(f"⚠️  Warning: predictions have unexpected dimensions, skipping batch {batch_idx}")
                 continue
+            
+            # 토큰 레벨 정확도 계산 (train.py와 동일한 방식)
+            if isinstance(teacher_pred, torch.Tensor) and teacher_pred.dim() == 2:
+                # Teacher 토큰 레벨 정확도
+                teacher_correct_tokens = (teacher_pred == tags).float()[attention_mask.bool()].sum()
+                teacher_valid_tokens = attention_mask.bool().sum()
+                teacher_total_correct_tokens += teacher_correct_tokens.item()
+                teacher_total_valid_tokens += teacher_valid_tokens.item()
+                
+                # Student 토큰 레벨 정확도
+                student_correct_tokens = (student_pred == tags).float()[attention_mask.bool()].sum()
+                student_valid_tokens = attention_mask.bool().sum()
+                student_total_correct_tokens += student_correct_tokens.item()
+                student_total_valid_tokens += student_valid_tokens.item()
             
             # 키워드 추출 및 평가 (배치의 각 샘플에 대해)
             for i in range(input_ids.size(0)):
@@ -933,12 +909,8 @@ def evaluate_real_models(teacher_model, student_model, test_loader, device, toke
     else:
         teacher_f1 = 0.0
     
-    teacher_total_predictions = teacher_TP + teacher_FP
-    teacher_total_actual = teacher_TP + teacher_FN
-    if teacher_total_predictions + teacher_total_actual > 0:
-        teacher_acc = teacher_TP / max(teacher_total_predictions, teacher_total_actual) if max(teacher_total_predictions, teacher_total_actual) > 0 else 0.0
-    else:
-        teacher_acc = 0.0
+    # Teacher accuracy 계산 (이미 위에서 계산됨)
+    teacher_acc = teacher_total_correct_tokens / teacher_total_valid_tokens if teacher_total_valid_tokens > 0 else 0.0
     
     # Student 메트릭 계산
     if student_TP + student_FP > 0:
@@ -956,16 +928,25 @@ def evaluate_real_models(teacher_model, student_model, test_loader, device, toke
     else:
         student_f1 = 0.0
     
-    student_total_predictions = student_TP + student_FP
-    student_total_actual = student_TP + student_FN
-    if student_total_predictions + student_total_actual > 0:
-        student_acc = student_TP / max(student_total_predictions, student_total_actual) if max(student_total_predictions, student_total_actual) > 0 else 0.0
-    else:
-        student_acc = 0.0
+    # Student accuracy 계산 (이미 위에서 계산됨)
+    student_acc = student_total_correct_tokens / student_total_valid_tokens if student_total_valid_tokens > 0 else 0.0
     
-    avg_teacher_time = np.mean(teacher_times) * 1000  # ms
-    avg_student_time = np.mean(student_times) * 1000  # ms
+    # 시간 계산 (성공한 배치만 평균 계산)
+    successful_teacher_times = [t for t in teacher_times if t is not None]
+    successful_student_times = [t for t in student_times if t is not None]
+    
+    avg_teacher_time = np.mean(successful_teacher_times) * 1000 if successful_teacher_times else 0.0  # ms
+    avg_student_time = np.mean(successful_student_times) * 1000 if successful_student_times else 0.0  # ms
     speedup = avg_teacher_time / avg_student_time if avg_student_time > 0 else 1.0
+    
+    # 디버깅 정보 출력
+    print(f"📊 통계 정보:")
+    print(f"   - 총 배치 수: {len(teacher_times)}")
+    print(f"   - Teacher 성공 배치: {len(successful_teacher_times)}")
+    print(f"   - Student 성공 배치: {len(successful_student_times)}")
+    print(f"   - Teacher 평균 시간: {avg_teacher_time:.2f}ms")
+    print(f"   - Student 평균 시간: {avg_student_time:.2f}ms")
+    print(f"   - Speedup: {speedup:.2f}x")
     
     results = {
         'teacher': {

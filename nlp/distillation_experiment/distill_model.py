@@ -23,7 +23,8 @@ class DistillKoKeyBERT(nn.Module):
             self.config = self.model.config
         else:
             self.config = config
-            self.model = BertModel(self.config)
+            # 'model_name'을 기준으로 모델을 불러오지만, 'config'에 명시된 구조(예: 6개 레이어)로 생성합니다.
+            self.model = BertModel.from_pretrained(model_name, config=self.config)
             
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
@@ -152,9 +153,15 @@ class DistillKoKeyBERT(nn.Module):
         with torch.no_grad():
             predicted_tags = self.forward(input_ids, attention_mask)
         
+        # predicted_tags는 리스트 형태로 반환되므로 첫 번째 배치의 결과 사용
+        if isinstance(predicted_tags, list):
+            predictions = predicted_tags[0]
+        else:
+            predictions = predicted_tags
+        
         # 키워드 추출
         keywords = self.extract_keywords_from_predictions(
-            input_ids[0], predicted_tags[0], attention_mask[0], tokenizer
+            input_ids[0], predictions, attention_mask[0], tokenizer
         )
         
         return keywords
@@ -201,6 +208,59 @@ class DistillKoKeyBERT(nn.Module):
                 keywords.append(keyword)
         
         return keywords
+    
+    @classmethod
+    def from_original_model(cls, original_model):
+        """
+        원본 KoKeyBERT 모델을 DistillKoKeyBERT로 변환합니다.
+        
+        Args:
+            original_model: 원본 KoKeyBERT 모델
+        
+        Returns:
+            DistillKoKeyBERT: 변환된 모델
+        """
+        # 원본 모델의 설정을 가져와서 Student 모델 설정 생성
+        teacher_config = original_model.config
+        student_config = BertConfig(
+            vocab_size=teacher_config.vocab_size,
+            hidden_size=teacher_config.hidden_size,
+            num_hidden_layers=teacher_config.num_hidden_layers // 2,  # 절반 레이어
+            num_attention_heads=teacher_config.num_attention_heads,
+            intermediate_size=teacher_config.intermediate_size,
+            hidden_dropout_prob=teacher_config.hidden_dropout_prob,
+            attention_probs_dropout_prob=teacher_config.attention_probs_dropout_prob,
+            max_position_embeddings=teacher_config.max_position_embeddings,
+            type_vocab_size=teacher_config.type_vocab_size,
+            initializer_range=teacher_config.initializer_range,
+            layer_norm_eps=teacher_config.layer_norm_eps,
+            pad_token_id=teacher_config.pad_token_id,
+            bos_token_id=teacher_config.bos_token_id,
+            eos_token_id=teacher_config.eos_token_id,
+            use_cache=teacher_config.use_cache,
+        )
+        
+        # Student 모델 생성
+        student_model = cls(config=student_config, num_class=3)
+        
+        # 원본 모델의 가중치를 Student 모델에 복사 (가능한 부분만)
+        student_state_dict = student_model.state_dict()
+        original_state_dict = original_model.state_dict()
+        
+        # 공통 키만 복사
+        for key in student_state_dict.keys():
+            if key in original_state_dict:
+                if 'encoder.layer' in key:
+                    # 레이어 인덱스 조정 (0-5만 사용)
+                    layer_idx = int(key.split('.')[2])
+                    if layer_idx < 6:  # Student 모델의 레이어 수만큼만
+                        student_state_dict[key] = original_state_dict[key]
+                else:
+                    # encoder.layer가 아닌 키는 그대로 복사
+                    student_state_dict[key] = original_state_dict[key]
+        
+        student_model.load_state_dict(student_state_dict)
+        return student_model
 
 
 if __name__ == '__main__':

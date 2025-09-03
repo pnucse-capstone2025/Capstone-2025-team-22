@@ -5,6 +5,15 @@ from transformers import BertConfig
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import numpy as np
 
+# DistillKoKeyBERT import 추가
+try:
+    from distillation_experiment.distill_model import DistillKoKeyBERT
+except ImportError:
+    try:
+        from distill_model import DistillKoKeyBERT
+    except ImportError:
+        DistillKoKeyBERT = None
+
 import argparse
 import logging
 from torch.utils.data import DataLoader, SequentialSampler
@@ -464,18 +473,293 @@ def test_with_keybert(test_dataset, args, logger, device=None):
         logger.error("KeyBERT 라이브러리를 설치해야 합니다. 'pip install keybert'를 실행하세요.")
         return 0.0, 0.0, 0.0
 
+def test_with_distill_kokeybert(test_dataset, args, logger, device=None):
+    """
+    DistillKoKeyBERT 모델을 사용하여 키워드 추출 테스트를 수행합니다.
+    
+    Args:
+        test_dataset: 테스트 데이터셋
+        args: 파라미터 (model_name, checkpoint_path 등)
+        logger: 로거
+        device: 사용할 디바이스
+    
+    Returns:
+        tuple: (손실, 정확도, 정밀도, 재현율, F1 점수)
+    """
+    if DistillKoKeyBERT is None:
+        logger.error("DistillKoKeyBERT를 import할 수 없습니다.")
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+    
+    try:
+        from kobert_tokenizer import KoBERTTokenizer
+    except ImportError:
+        logger.error("KoBERTTokenizer를 import할 수 없습니다.")
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+    
+    logger.info("DistillKoKeyBERT 테스트 시작")
+    logger.info("배치 크기: %d", args.batch_size if hasattr(args, 'batch_size') else 1)
+    start_time = datetime.now()
+    logger.info("start time: %s", start_time.strftime("%Y-%m-%d %H:%M:%S"))
+    
+    try:
+        # DistillKoKeyBERT 모델 초기화
+        if hasattr(args, 'distill_checkpoint_path') and args.distill_checkpoint_path:
+            try:
+                checkpoint = torch.load(args.distill_checkpoint_path, map_location=device)
+                
+                # 💡 [수정] Teacher 설정을 불러온 후 수정하는 방식으로 변경
+                if isinstance(checkpoint, dict) and 'model_config' in checkpoint:
+                    logger.info("저장된 모델 설정 사용 성공!")
+                    student_config = checkpoint['model_config']
+                else:
+                    logger.info("체크포인트에서 설정을 찾을 수 없어, 기본 Student 설정을 사용합니다.")
+                    student_config = BertConfig.from_pretrained(args.model_name)
+                    student_config.num_hidden_layers = student_config.num_hidden_layers // 2 # 6 레이어
+                
+                # logger.info(f"Student 모델 설정: {student_config.num_hidden_layers} 레이어")
+                # 1. 제외하고 싶은 키들의 리스트를 정의합니다.
+                keys_to_exclude = ['_output_attentions', 'transformers_version', 'model_type']
+
+                # 2. 딕셔너리 컴프리헨션을 사용해 특정 키가 없는 새 딕셔너리를 만듭니다.
+                filtered_config = {
+                    key: value
+                    for key, value in student_config.to_dict().items()
+                    if key not in keys_to_exclude
+                }
+
+                # 3. 필터링된 결과를 로깅합니다.
+                filtered_config = BertConfig(**filtered_config)
+                # logger.info(f"filtered Student 모델 설정: {filtered_config}")
+                logger.info(f"Student 모델 설정: {student_config.num_hidden_layers}")
+                model = DistillKoKeyBERT(config=filtered_config, num_class=3)
+                
+                # 가중치 로드
+                if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                    model.load_state_dict(checkpoint['model_state_dict'])
+                else:
+                    model.load_state_dict(checkpoint)
+                logger.info("체크포인트 가중치 로드 완료")
+
+            except Exception as e:
+                logger.error(f"체크포인트 로드 중 심각한 오류 발생: {e}")
+                import traceback
+                logger.debug(f"상세 오류: {traceback.format_exc()}")
+                return 0.0, 0.0, 0.0, 0.0, 0.0
+        else:
+            # 체크포인트가 없을 경우
+            logger.info("체크포인트 경로가 지정되지 않았습니다. 기본 Student 모델을 생성합니다.")
+            # 💡 [수정] Teacher 설정을 불러온 후 수정하는 방식으로 변경
+            student_config = BertConfig.from_pretrained(args.model_name)
+            student_config.num_hidden_layers = student_config.num_hidden_layers // 2
+            logger.info(f"기본 Student 모델 설정: {student_config.num_hidden_layers} 레이어")
+            model = DistillKoKeyBERT(config=student_config, num_class=3)
+        
+        logger.info("모델 초기화 완료")
+        model.to(device)
+        model.eval()
+        
+        # 토크나이저 초기화
+        tokenizer = KoBERTTokenizer.from_pretrained(args.model_name)
+        collator = Collator(tokenizer)
+        
+        # 평가 지표 초기화
+        total_loss = 0.0
+        total_acc = 0.0
+        total_TP = 0
+        total_FP = 0
+        total_FN = 0
+        
+        # 모든 예측 및 실제 키워드 저장 (결과 분석용)
+        all_pred_keywords = []
+        all_true_keywords = []
+        
+        # 메모리 관리를 위해 GPU 캐시 정리
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        
+        # 데이터로더 생성
+        batch_size = args.batch_size if hasattr(args, 'batch_size') else 1
+        test_dataloader = DataLoader(
+            test_dataset,
+            batch_size=batch_size,
+            sampler=SequentialSampler(test_dataset),
+            collate_fn=collator,
+            num_workers=0
+        )
+        
+        test_step = 0
+        
+        for batch in test_dataloader:
+            test_step += 1
+            
+            # 배치 데이터 가져오기
+            try:
+                index, text_ids, text_attention_mask, bio_tags = batch
+            except ValueError as e:
+                logger.error(f"배치 데이터 파싱 오류: {e}")
+                continue
+
+            # 모델 추론 (배치 단위로 한 번만 호출)
+            try:
+                with torch.no_grad():
+                    predicted_tags = model(input_ids=text_ids.to(device), 
+                                        attention_mask=text_attention_mask.to(device))
+                
+                # BIO 태그 시퀀스 처리
+                if isinstance(predicted_tags, list):
+                    tag_seqs = [torch.tensor(s, dtype=torch.long, device=device) for s in predicted_tags]
+                    padded = pad_sequence(tag_seqs, batch_first=True, padding_value=model.config.pad_token_id).to(device)
+                else:
+                    padded = predicted_tags.to(device)
+                
+                # 정확도 계산
+                batch_acc = (padded == bio_tags.to(device)).float()[text_attention_mask.to(device).bool()].mean()
+                total_acc += batch_acc.item()
+                
+            except Exception as e:
+                logger.error(f"모델 추론 오류: {e}")
+                continue
+            
+            # 키워드 추출 및 평가
+            batch_TP = 0
+            batch_FP = 0
+            batch_FN = 0
+            
+            for i in range(len(text_ids)):
+                try:
+                    # 예측된 키워드 추출
+                    pred_keywords = extract_keywords_from_bio_tags(
+                        text_ids[i],
+                        padded[i],
+                        text_attention_mask[i],
+                        tokenizer,
+                        device
+                    )
+                    
+                    # 실제 키워드 추출
+                    try:
+                        # index 구조에 따라 적절히 접근
+                        idx = index[i][0] if isinstance(index[i], (list, tuple)) else index[i]
+                        if isinstance(test_dataset.data[idx], dict) and "keyword" in test_dataset.data[idx]:
+                            true_keywords = test_dataset.data[idx]["keyword"]
+                            # 리스트가 아닌 경우 리스트로 변환
+                            if not isinstance(true_keywords, list):
+                                true_keywords = [true_keywords]
+                        else:
+                            logger.warning(f"데이터셋에 'keyword' 키가 없습니다: {idx}")
+                            true_keywords = []
+                    except (IndexError, KeyError) as e:
+                        logger.warning(f"데이터셋 인덱싱 오류: {e}")
+                        true_keywords = []
+                    
+                    # 모든 예측 및 실제 키워드 저장
+                    all_pred_keywords.append(pred_keywords)
+                    all_true_keywords.append(true_keywords)
+                    
+                    # 키워드 평가
+                    TP, FP, FN = evaluate_keywords(pred_keywords, true_keywords)
+                    batch_TP += TP
+                    batch_FP += FP
+                    batch_FN += FN
+                except Exception as e:
+                    logger.warning(f"키워드 추출 및 평가 오류: {e}")
+                    continue
+            
+            total_TP += batch_TP
+            total_FP += batch_FP
+            total_FN += batch_FN
+            
+            # 현재 배치의 성능 지표 계산
+            precision = batch_TP / (batch_TP + batch_FP) if (batch_TP + batch_FP) > 0 else 0
+            recall = batch_TP / (batch_TP + batch_FN) if (batch_TP + batch_FN) > 0 else 0
+            f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+            
+            # 로깅 (자세한 배치별 로깅은 디버그 레벨로)
+            if hasattr(args, 'log_freq') and (test_step % args.log_freq == 0 or test_step == 1):
+                logger.info("Step: %d/%d, Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f", 
+                           test_step, len(test_dataloader), batch_acc.item(), 
+                           precision, recall, f1)
+            else:
+                logger.debug("Step: %d/%d, Acc: %.4f, P: %.4f, R: %.4f, F1: %.4f", 
+                           test_step, len(test_dataloader), batch_acc.item(), 
+                           precision, recall, f1)
+            
+            # 전체 통계에 추가
+            # total_acc += batch_acc.item()
+            total_TP += batch_TP
+            total_FP += batch_FP
+            total_FN += batch_FN
+        
+        # 테스트 데이터가 없는 경우 처리
+        if test_step == 0:
+            logger.warning("테스트 데이터가 없거나 모든 배치에서 오류가 발생했습니다.")
+            return 0.0, 0.0, 0.0, 0.0, 0.0
+        
+        # 전체 성능 지표 계산
+        total_acc /= test_step
+        total_precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
+        total_recall = total_TP / (total_TP + total_FN) if (total_TP + total_FN) > 0 else 0
+        total_f1 = 2 * total_precision * total_recall / (total_precision + total_recall) if (total_precision + total_recall) > 0 else 0
+        
+        logger.info("DistillKoKeyBERT 테스트 완료 - 총 %d 배치", test_step)
+        logger.info("키워드 성능 - Precision: %.4f, Recall: %.4f, F1: %.4f", total_precision, total_recall, total_f1)
+        logger.info("Confusion Matrix - TP: %d, FP: %d, FN: %d", total_TP, total_FP, total_FN)
+        logger.info("end time: %s", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        logger.info("total time: %s", datetime.now() - start_time)
+        
+        # 상세 분석을 위한 결과 저장 (옵션)
+        if hasattr(args, 'save_results') and args.save_results:
+            try:
+                # 결과를 파일로 저장
+                results = {
+                    'metrics': {
+                        'accuracy': total_acc,
+                        'precision': total_precision,
+                        'recall': total_recall,
+                        'f1': total_f1,
+                        'TP': total_TP,
+                        'FP': total_FP,
+                        'FN': total_FN
+                    },
+                    'predictions': []
+                }
+                
+                # 각 샘플의 예측 결과 저장
+                for i in range(len(all_pred_keywords)):
+                    results['predictions'].append({
+                        'predicted': all_pred_keywords[i],
+                        'true': all_true_keywords[i] if i < len(all_true_keywords) else []
+                    })
+                
+                with open(os.path.join('./results', f'distill_kokeybert_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
+                    json.dump(results, f, ensure_ascii=False, indent=2)
+                
+                logger.info(f"상세 결과가 './results/distill_kokeybert_results_{args.test_logger_name}.json'에 저장되었습니다.")
+            except Exception as e:
+                logger.warning(f"결과 저장 중 오류 발생: {e}")
+        
+        return 0.0, total_acc, total_precision, total_recall, total_f1
+        
+    except Exception as e:
+        logger.error(f"DistillKoKeyBERT 테스트 중 오류 발생: {e}")
+        import traceback
+        logger.error(f"상세 오류: {traceback.format_exc()}")
+        return 0.0, 0.0, 0.0, 0.0, 0.0
+
 def main():
     parser = argparse.ArgumentParser(description='KoKeyBERT Testing')
-    parser.add_argument("--test_data_path", type=str, default="./src/data/test_clean.json")
+    parser.add_argument("--test_data_path", type=str, default="../src/data/test_clean.json")
     parser.add_argument("--model_name", type=str, default="skt/kobert-base-v1")
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="cuda for gpu, cpu for cpu")
     parser.add_argument("--test_logger_name", type=str, default="test")
     parser.add_argument("--num_workers", type=int, default=8, help="A100: 12, 8 recommanded")
-    parser.add_argument("--checkpoint_path", type=str, default="./checkpoints/best_model.pt", help="Path to checkpoint to load model from")
+    parser.add_argument("--checkpoint_path", type=str, default="best_model.pt", help="Path to checkpoint to load model from")
     parser.add_argument("--log_freq", type=int, default=5, help="로깅 빈도 (몇 배치마다 로그를 출력할지)")
     parser.add_argument("--save_results", action="store_true", help="테스트 결과를 JSON 파일로 저장")
     parser.add_argument("--use_keybert", action="store_true", help="KeyBERT 라이브러리를 사용하여 테스트")
+    parser.add_argument("--use_distill_kokeybert", action="store_true", help="DistillKoKeyBERT 모델을 사용하여 테스트")
+    parser.add_argument("--distill_checkpoint_path", type=str, default="", help="DistillKoKeyBERT 체크포인트 경로")
     parser.add_argument("--num_keywords", type=int, default=3, help="키워드 개수")
     args = parser.parse_args()
 
@@ -542,6 +826,21 @@ def main():
         logger.info("********** KeyBERT 라이브러리 테스트 완료 **********")
         logger.info("KeyBERT 성능 - Precision: %.4f, Recall: %.4f, F1: %.4f", 
                    keybert_precision, keybert_recall, keybert_f1)
+        return
+
+    # DistillKoKeyBERT 모델 테스트
+    elif args.use_distill_kokeybert:
+        logger.info("********** DistillKoKeyBERT 테스트 시작 **********")
+        distill_loss, distill_acc, distill_precision, distill_recall, distill_f1 = test_with_distill_kokeybert(
+            test_dataset=test_dataset,
+            args=args,
+            logger=logger,
+            device=device
+        )
+        logger.info("********** DistillKoKeyBERT 테스트 완료 **********")
+        logger.info("DistillKoKeyBERT 최종 결과 - 손실: %.4f, 정확도: %.4f", distill_loss, distill_acc)
+        logger.info("DistillKoKeyBERT 성능 - Precision: %.4f, Recall: %.4f, F1: %.4f", 
+                   distill_precision, distill_recall, distill_f1)
         return
 
     # KoKeyBERT 모델 테스트
