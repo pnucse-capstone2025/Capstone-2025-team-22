@@ -146,6 +146,9 @@ export const DetailPage = () => {
 
       <div className={styles.detailWrapper}>
         <h3 className={styles.contentTitle}>키워드 분석 결과</h3>
+        <p className={styles.contentDescription}>
+          키워드를 클릭하시면 해당 키워드가 추출된 이유를 확인하실 수 있습니다.
+        </p>
         <div className={styles.keywordBox}>
           {keywords.length > 0 ? (
             <div className={styles.keywordButtons}>
@@ -173,8 +176,11 @@ export const DetailPage = () => {
             hoveredKeyword={selectedKeyword}
           />
         </div>
-        <div className={styles.textContent}></div>
+        <div className={styles.gradationScale}></div>
         <h3 className={styles.contentTitle}>품사별 분석 결과</h3>
+        <p className={styles.contentDescription}>
+          품사 분석 과정에는 MeCab 라이브러리를 사용하였습니다.
+        </p>
         <div className={styles.detailContainer}>
           <WordCloudPage
             nounWords={analysisData?.nouns || []}
