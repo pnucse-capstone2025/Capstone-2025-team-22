@@ -23,7 +23,7 @@ class DistillKoKeyBERT(nn.Module):
             self.config = self.model.config
         else:
             self.config = config
-            self.model = BertModel.from_pretrained(model_name, config=self.config)
+            self.model = BertModel.from_pretrained(model_name, config=self.config, attn_implementation="eager")
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.dropout = nn.Dropout(self.config.hidden_dropout_prob)
         self.classifier = nn.Linear(self.config.hidden_size, num_class)
@@ -48,7 +48,7 @@ class DistillKoKeyBERT(nn.Module):
             attention_mask = input_ids.ne(self.config.pad_token_id).float()
 
         # BERT 인코딩
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask, output_attentions=True)
         
         # (B, L, H)
         last_hidden_state = outputs[0]
@@ -149,7 +149,7 @@ class DistillKoKeyBERT(nn.Module):
         
         # 예측
         with torch.no_grad():
-            predicted_tags = self.forward(input_ids, attention_mask)
+            predicted_tags, outputs = self.forward(input_ids, attention_mask, return_outputs=True)
         
         # predicted_tags는 리스트 형태로 반환되므로 첫 번째 배치의 결과 사용
         if isinstance(predicted_tags, list):
@@ -167,9 +167,9 @@ class DistillKoKeyBERT(nn.Module):
             if not any(keyword in other for other in keywords if keyword != other):
                 pred_keywords.add(keyword)
         if pred_keywords:
-            return pred_keywords
+            return pred_keywords, outputs
         else:
-            return None
+            return None, None
     
     def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer):
         """예측 결과에서 키워드 추출"""
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     from transformers import BertConfig
     from kobert_tokenizer import KoBERTTokenizer
 
-    checkpoint = torch.load('../distill_KoKeyBERT.pt', map_location='cpu', weights_only=False)
+    checkpoint = torch.load('distill_KoKeyBERT.pt', map_location='cpu', weights_only=False)
     config = checkpoint['model_config']
     model = DistillKoKeyBERT(config=config)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -284,5 +284,6 @@ if __name__ == '__main__':
 
     # 테스트 입력
     text = "면책특권의 대상이 되는 행위는 국회의 직무수행에 필수적인 국회의원의 국회 내에서의 직무상 발언과 표결이라는 의사표현행위 자체에만 국한되지 않고 이에 통상적으로 부수하여 행하여지는 행위까지 포함되므로, 국회의원이 국회의 위원회나 국정감사장에서 국무위원·정부위원 등에 대하여 하는 질문이나 질의는 국회의 입법활동에 필요한 정보를 수집하고 국정통제기능을 수행하기 위한 것이므로 면책특권의 대상이 되는 발언에 해당함은 당연하고, 또한 국회의원이 국회 내에서 하는 정부·행정기관에 대한 자료제출의 요구는 국회의원이 입법 및 국정통제 활동을 수행하기 위하여 필요로 하는 것이므로 그것이 직무상 질문이나 질의를 준비하기 위한 것인 경우에는 직무상 발언에 부수하여 행하여진 것으로서 면책특권이 인정되어야 한다.\n[2] 면책특권이 인정되는 국회의원의 직무행위에 대하여 수사기관이 그 직무행위가 범죄행위에 해당하는지 여부를 조사하여 소추하거나 법원이 이를 심리한다면, 국회의원이 국회에서 자유롭게 발언하거나 표결하는데 지장을 주게 됨은 물론 면책특권을 인정한 헌법규정의 취지와 정신에도 어긋나는 일이 되기 때문에, 소추기관은 면책특권이 인정되는 직무행위가 어떤 범죄나 그 일부를 구성하는 행위가 된다는 이유로 공소를 제기할 수 없고, 또 법원으로서도 그 직무행위가 범죄나 그 일부를 구성하는 행위가 되는지 여부를 심리하거나 이를 어떤 범죄의 일부를 구성하는 행위로 인정할 수 없다."
-    keywords = model.extract_keywords(text, tokenizer)
+    keywords, outputs = model.extract_keywords(text, tokenizer)
+    print(outputs.attentions)
     print(f"추출된 키워드: {keywords}")
