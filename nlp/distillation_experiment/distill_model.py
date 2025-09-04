@@ -139,79 +139,93 @@ class DistillKoKeyBERT(nn.Module):
         return refined
     
     def extract_keywords(self, text, tokenizer):
-        """텍스트에서 키워드 추출"""
-        # 토크나이징
+        """텍스트에서 키워드와 위치 인덱스를 추출합니다."""
         inputs = tokenizer(text, return_tensors='pt', truncation=True, 
                           padding=True, max_length=512)
         
-        input_ids = inputs['input_ids'].to(self.device)
-        attention_mask = inputs['attention_mask'].to(self.device)
-        
-        # 예측
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        input_ids = inputs['input_ids']
+        attention_mask = inputs['attention_mask']
+
         with torch.no_grad():
             predicted_tags, outputs = self.forward(input_ids, attention_mask, return_outputs=True)
         
-        # predicted_tags는 리스트 형태로 반환되므로 첫 번째 배치의 결과 사용
         if isinstance(predicted_tags, list):
             predictions = predicted_tags[0]
         else:
             predictions = predicted_tags
-        
-        # 키워드 추출
-        keywords = self.extract_keywords_from_predictions(
-            input_ids[0], predictions, attention_mask[0], tokenizer
-        )
 
-        pred_keywords = set()
-        for keyword in keywords:
-            if not any(keyword in other for other in keywords if keyword != other):
-                pred_keywords.add(keyword)
-        if pred_keywords:
-            return pred_keywords, outputs
-        else:
-            return None, None
-    
-    def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer):
-        """예측 결과에서 키워드 추출"""
+        # 원본 텍스트(text)를 전달하여 키워드 위치를 찾도록 함
+        keywords_with_indices = self.extract_keywords_from_predictions(
+            input_ids[0], predictions, attention_mask[0], tokenizer, text
+        )
+        
+        # 이하 로직은 이전 제안과 동일
+        if not keywords_with_indices:
+            return [], None
+        final_keywords = []
+        keyword_strings = {kw[0] for kw in keywords_with_indices}
+        for keyword, start, end in keywords_with_indices:
+            if not any(keyword in other for other in keyword_strings if keyword != other):
+                final_keywords.append({'keyword': keyword, 'start': start, 'end': end})
+        
+        return final_keywords, outputs
+
+    def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer, text):
+        """
+        예측 결과에서 키워드를 추출하고, 원본 text.find()로 위치를 찾습니다.
+        """
         keywords = []
         current_keyword_tokens = []
+        last_keyword_end_pos = 0 # 중복 키워드 검색을 위한 포인터
         
-        # 유효한 토큰만 처리 (패딩 제외)
         valid_length = attention_mask.sum().item()
         
-        for i in range(1, valid_length - 1):  # [CLS], [SEP] 제외
+        for i in range(1, valid_length): # [CLS]부터 [SEP]까지
             token_id = input_ids[i].item()
             tag = predictions[i]
             
-            if tag == 0:  # B 태그
-                # 이전 키워드가 있으면 저장
-                if current_keyword_tokens:
+            # B 태그에서 새 키워드 시작
+            if tag == 0:
+                if current_keyword_tokens: # 이전 키워드 저장
                     keyword = tokenizer.decode(current_keyword_tokens).strip()
-                    if keyword and keyword not in keywords:
-                        keywords.append(keyword)
-                
-                # 새 키워드 시작
+                    if keyword:
+                        try:
+                            start = text.index(keyword, last_keyword_end_pos)
+                            end = start + len(keyword)
+                            keywords.append((keyword, start, end))
+                            last_keyword_end_pos = end
+                        except ValueError:
+                            pass # 텍스트에서 못찾으면 무시
                 current_keyword_tokens = [token_id]
-                
-            elif tag == 1:  # I 태그
-                # 현재 키워드에 추가
-                if current_keyword_tokens:  # B 태그가 먼저 있어야 함
-                    current_keyword_tokens.append(token_id)
-                    
-            else:  # O 태그
-                # 현재 키워드 종료
+            # I 태그는 키워드에 추가
+            elif tag == 1 and current_keyword_tokens:
+                current_keyword_tokens.append(token_id)
+            # O 태그이거나 I로 시작하면 키워드 종료
+            else:
                 if current_keyword_tokens:
                     keyword = tokenizer.decode(current_keyword_tokens).strip()
-                    if keyword and keyword not in keywords:
-                        keywords.append(keyword)
+                    if keyword:
+                        try:
+                            start = text.index(keyword, last_keyword_end_pos)
+                            end = start + len(keyword)
+                            keywords.append((keyword, start, end))
+                            last_keyword_end_pos = end
+                        except ValueError:
+                            pass
                     current_keyword_tokens = []
         
-        # 마지막 키워드 처리
+        # 루프 종료 후 마지막 키워드 처리
         if current_keyword_tokens:
             keyword = tokenizer.decode(current_keyword_tokens).strip()
-            if keyword and keyword not in keywords:
-                keywords.append(keyword)
-        
+            if keyword:
+                try:
+                    start = text.index(keyword, last_keyword_end_pos)
+                    end = start + len(keyword)
+                    keywords.append((keyword, start, end))
+                except ValueError:
+                    pass
+
         return keywords
     
     @classmethod
@@ -273,7 +287,10 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
     from transformers import BertConfig
-    from kobert_tokenizer import KoBERTTokenizer
+    from kobert_tokenizer import KoBERTTokenizer 
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
+    from back_end.app.text_analysis import analyze_keyword_attention
+    import pprint
 
     checkpoint = torch.load('distill_KoKeyBERT.pt', map_location='cpu', weights_only=False)
     config = checkpoint['model_config']
@@ -283,7 +300,36 @@ if __name__ == '__main__':
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
 
     # 테스트 입력
-    text = "면책특권의 대상이 되는 행위는 국회의 직무수행에 필수적인 국회의원의 국회 내에서의 직무상 발언과 표결이라는 의사표현행위 자체에만 국한되지 않고 이에 통상적으로 부수하여 행하여지는 행위까지 포함되므로, 국회의원이 국회의 위원회나 국정감사장에서 국무위원·정부위원 등에 대하여 하는 질문이나 질의는 국회의 입법활동에 필요한 정보를 수집하고 국정통제기능을 수행하기 위한 것이므로 면책특권의 대상이 되는 발언에 해당함은 당연하고, 또한 국회의원이 국회 내에서 하는 정부·행정기관에 대한 자료제출의 요구는 국회의원이 입법 및 국정통제 활동을 수행하기 위하여 필요로 하는 것이므로 그것이 직무상 질문이나 질의를 준비하기 위한 것인 경우에는 직무상 발언에 부수하여 행하여진 것으로서 면책특권이 인정되어야 한다.\n[2] 면책특권이 인정되는 국회의원의 직무행위에 대하여 수사기관이 그 직무행위가 범죄행위에 해당하는지 여부를 조사하여 소추하거나 법원이 이를 심리한다면, 국회의원이 국회에서 자유롭게 발언하거나 표결하는데 지장을 주게 됨은 물론 면책특권을 인정한 헌법규정의 취지와 정신에도 어긋나는 일이 되기 때문에, 소추기관은 면책특권이 인정되는 직무행위가 어떤 범죄나 그 일부를 구성하는 행위가 된다는 이유로 공소를 제기할 수 없고, 또 법원으로서도 그 직무행위가 범죄나 그 일부를 구성하는 행위가 되는지 여부를 심리하거나 이를 어떤 범죄의 일부를 구성하는 행위로 인정할 수 없다."
-    keywords, outputs = model.extract_keywords(text, tokenizer)
-    print(outputs.attentions)
-    print(f"추출된 키워드: {keywords}")
+    text = "주택정책과 담당께서 어제 수많은 안건들에 대해서 일괄 답변하셨는데 동일 민원이 많아서 일괄 답변을 하셨다면서 첨부된 자료 수준이 이 정도인 게 말이 되나요? 준공승인 거부 건으로 제시한 것뿐만이 아니라 별도로 문제 및 민원 제기한 2층 실외기 위치에 대한 사항, 2층 가스배관 노출 및 내진설계에 대한 사항에 대한 답변은 어디에 있나요? 개선사항 및 공사 미비사항, 입주자 사전점검 하자 사항에 대해서는 검증을 완료하고 준공승인이 되어야 할 것입니다. 안전에 대한 문제가 해결 검증이 되지 않는 상태, 하자사항 미비 상태로 통상적으로 이루어진다는 조건부 준공승인은 절대 불가하며 입주예정자들의 이의제기 및 집단행동은 계속될 것입니다."
+    keywords_info, outputs = model.extract_keywords(text, tokenizer)
+    print("--- 추출된 키워드 ---")
+    pprint.pprint(keywords_info)
+
+    if keywords_info and outputs and outputs.attentions:
+        print("\n--- 키워드별 어텐션 분석 결과 ---")
+        attention_analysis_result = analyze_keyword_attention(
+            text=text,
+            keywords_info=keywords_info,
+            attentions=outputs.attentions,
+            tokenizer=tokenizer
+        )
+        pprint.pprint(attention_analysis_result)
+
+        # --- 위치 인덱스 검증 코드 (수정됨) ---
+        print("\n--- 위치 인덱스 검증 시작 ---")
+        verification_passed = True
+        # 키워드별로 결과를 순회
+        for keyword, results_dict in attention_analysis_result.items():
+            for pos_tag, results_list in results_dict.items():
+                for item in results_list:
+                    word = item['word']
+                    for start, end in item['locations']:
+                        sliced_text = text[start:end]
+                        if word != sliced_text:
+                            print(f"[검증 실패] 키워드: '{keyword}', 단어: '{word}', 위치: ({start},{end}), 추출된 텍스트: '{sliced_text}'")
+                            verification_passed = False
+        
+        if verification_passed:
+            print("✅ 모든 위치 인덱스가 원본 텍스트와 일치합니다.")
+        else:
+            print("❗️ 일부 위치 인덱스가 원본 텍스트와 일치하지 않습니다.")
