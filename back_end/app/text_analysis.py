@@ -191,7 +191,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
             
             for word, spans in word_spans.items():
                 for span_start, span_end in spans:
-                    if token_start < span_end and token_end > span_start:
+                    if token_start <= span_end and token_end >= span_start:
                         # 각 위치별로 별도의 항목으로 저장
                         word_info[word].append({
                             'score': score.item(),
