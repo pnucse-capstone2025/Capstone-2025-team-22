@@ -154,79 +154,83 @@ class DistillKoKeyBERT(nn.Module):
         else:
             predictions = predicted_tags
 
-        # 원본 텍스트(text)를 전달하여 키워드 위치를 찾도록 함
+        # ▼▼▼▼▼▼▼▼▼▼ [핵심 수정] 토큰 인덱스를 직접 반환하도록 변경 ▼▼▼▼▼▼▼▼▼▼
         keywords_with_indices = self.extract_keywords_from_predictions(
-            input_ids[0], predictions, attention_mask[0], tokenizer, text
+            input_ids[0], predictions, attention_mask[0], tokenizer
         )
         
-        # 이하 로직은 이전 제안과 동일
         if not keywords_with_indices:
             return [], None
+
         final_keywords = []
-        keyword_strings = {kw[0] for kw in keywords_with_indices}
-        # extract_keywords 메서드의 167-169번째 줄을 다음과 같이 수정
-        for keyword, start, end in keywords_with_indices:
-            # 1글자 키워드 제외
+        keyword_strings = {kw['keyword'] for kw in keywords_with_indices}
+        
+        for kw_info in keywords_with_indices:
+            keyword = kw_info['keyword']
             if len(keyword) <= 1:
                 continue
             if not any(keyword in other for other in keyword_strings if keyword != other):
-                final_keywords.append({'keyword': keyword, 'start': start, 'end': end})
+                # text.index()를 사용하여 start, end를 여기서 계산 (출력용)
+                try:
+                    start = text.index(keyword)
+                    end = start + len(keyword)
+                    kw_info['start'] = start
+                    kw_info['end'] = end
+                    final_keywords.append(kw_info)
+                except ValueError:
+                    # 텍스트에서 못찾는 경우는 거의 없겠지만 예외 처리
+                    pass
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
         return final_keywords, outputs
 
-    def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer, text):
+    def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer):
         """
-        예측 결과에서 키워드를 추출하고, 원본 text.find()로 위치를 찾습니다.
+        예측 결과에서 키워드와 '토큰 인덱스'를 추출합니다.
         """
         keywords = []
-        current_keyword_tokens = []
-        last_keyword_end_pos = 0 # 중복 키워드 검색을 위한 포인터
+        current_keyword_tokens_indices = [] # 토큰 ID 대신 인덱스를 저장
         
         valid_length = attention_mask.sum().item()
         
         for i in range(1, valid_length): # [CLS]부터 [SEP]까지
-            token_id = input_ids[i].item()
             tag = predictions[i]
             
             # B 태그에서 새 키워드 시작
             if tag == 0:
-                if current_keyword_tokens: # 이전 키워드 저장
-                    keyword = tokenizer.decode(current_keyword_tokens).strip()
+                if current_keyword_tokens_indices: # 이전 키워드 저장
+                    token_ids = input_ids[current_keyword_tokens_indices].tolist()
+                    keyword = tokenizer.decode(token_ids).strip()
                     if keyword:
-                        try:
-                            start = text.index(keyword, last_keyword_end_pos)
-                            end = start + len(keyword)
-                            keywords.append((keyword, start, end))
-                            last_keyword_end_pos = end
-                        except ValueError:
-                            pass # 텍스트에서 못찾으면 무시
-                current_keyword_tokens = [token_id]
+                        keywords.append({
+                            'keyword': keyword,
+                            'token_indices': current_keyword_tokens_indices
+                        })
+                current_keyword_tokens_indices = [i]
             # I 태그는 키워드에 추가
-            elif tag == 1 and current_keyword_tokens:
-                current_keyword_tokens.append(token_id)
+            elif tag == 1 and current_keyword_tokens_indices:
+                current_keyword_tokens_indices.append(i)
             # O 태그이거나 I로 시작하면 키워드 종료
             else:
-                if current_keyword_tokens:
-                    keyword = tokenizer.decode(current_keyword_tokens).strip()
+                if current_keyword_tokens_indices:
+                    token_ids = input_ids[current_keyword_tokens_indices].tolist()
+                    keyword = tokenizer.decode(token_ids).strip()
                     if keyword:
-                        try:
-                            start = text.index(keyword, last_keyword_end_pos)
-                            end = start + len(keyword)
-                            keywords.append((keyword, start, end))
-                            last_keyword_end_pos = end
-                        except ValueError:
-                            pass
-                    current_keyword_tokens = []
+                        keywords.append({
+                            'keyword': keyword,
+                            'token_indices': current_keyword_tokens_indices
+                        })
+                    current_keyword_tokens_indices = []
         
         # 루프 종료 후 마지막 키워드 처리
-        if current_keyword_tokens:
-            keyword = tokenizer.decode(current_keyword_tokens).strip()
+        if current_keyword_tokens_indices:
+            token_ids = input_ids[current_keyword_tokens_indices].tolist()
+            keyword = tokenizer.decode(token_ids).strip()
             if keyword:
-                try:
-                    start = text.index(keyword, last_keyword_end_pos)
-                    end = start + len(keyword)
-                    keywords.append((keyword, start, end))
-                except ValueError:
-                    pass
+                keywords.append({
+                    'keyword': keyword,
+                    'token_indices': current_keyword_tokens_indices
+                })
 
         return keywords
     
@@ -302,7 +306,7 @@ if __name__ == '__main__':
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
 
     # 테스트 입력
-    text = "글쎄요, 어제 이것을 기여금으로 하든 또는 기금으로 하든 기금으로 해도 역시 부담금을 통해 재원을 충당하는 것이기 때문에…… 기여금이라고 하든, 기금이라고 하든 기금이라고 할 경우에도 역시 부담금을 통한 재원 마련이기 때문에 이것의 위헌 여부에 대해 우리 최재천 위원님께서 지적이 있으셨습니다. 거기에 대해서 정부 측에서 먼저 의견을 좀 말씀해 주시기 바랍니다."
+    text = "저희들이 이 개정안을 낸 이유는 이렇습니다. 지금 자치법에는 지방자치의 종류를 특별시․광역시 광역 하나하고 시군구, 2개로 나눠지고 있습니다. 그런데 광역시에 준하는 인구 100만 넘는 도시가 있습니다. 이것을 자꾸 광역으로 해 달라고 하는데 그렇게 하기 어려우니 또 인구규모는 다른 보통 시하고 다른 측면이 있어서 단순히 명칭만 특례시를 부여하는 취지에서 개정안을 마련했다는 것을 말씀드리고요. 특례군과 관련해서는 시각이 이럴 것 같습니다. 특례시 명칭은 재정특례 쪽에 관심을 두고 요구하는 것이고요. 특례군은 시책입니다. 소멸지역에 대해서 소멸 안 되게끔 방지하게끔 하는 시책 추진 방법입니다. 그래서 특례군 시책에 대해서는 다른 특별법에 의해서 특별한 시책을 강구할 수 있도록 법이 있기 때문에 그 법에 의해서 강조하고 강화시키면 충분할 것이다 그래서 특례군 도입은 아니다 하는 것이 정부의 입장입니다."
     keywords_info, outputs = model.extract_keywords(text, tokenizer)
     pprint.pprint(keywords_info)
 

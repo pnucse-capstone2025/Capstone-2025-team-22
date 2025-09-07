@@ -126,6 +126,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
     tokens = tokenizer.convert_ids_to_tokens(input_ids)
     estimated_offsets = _estimate_token_offsets(text, tokens)
 
+    
     attention_tensor = torch.stack(attentions).squeeze(1)
     attention_matrix = attention_tensor.sum(dim=(0, 1))
 
@@ -172,17 +173,24 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
     final_results = {}
     keyword_strings_set = {kw_info['keyword'] for kw_info in keywords_info}
 
-    # 1. 키워드별로 분석 반복 (이하 로직은 거의 동일)
+    # 1. 키워드별로 분석 반복
     for kw_info in keywords_info:
         keyword_str = kw_info['keyword']
         
-        keyword_indices = set()
-        start, end = kw_info['start'], kw_info['end']
-        for i, (offset_start, offset_end) in enumerate(estimated_offsets):
-            if offset_start < end and offset_end > start:
-                keyword_indices.add(i)
+        # ▼▼▼▼▼▼▼▼▼▼ [핵심 수정] 이제 토큰 인덱스를 직접 사용합니다 ▼▼▼▼▼▼▼▼▼▼
+        # 더 이상 start, end로 토큰을 찾을 필요가 없습니다.
+        keyword_indices = kw_info.get('token_indices')
         
-        keyword_indices = list(keyword_indices)
+        # 만약 token_indices가 없다면 이전 방식으로 호환되도록 처리
+        if keyword_indices is None:
+            keyword_indices = []
+            start, end = kw_info['start'], kw_info['end']
+            for i, (offset_start, offset_end) in enumerate(estimated_offsets):
+                if offset_start < end and offset_end > start:
+                    keyword_indices.append(i)
+            keyword_indices.sort()
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+        
         if not keyword_indices:
             final_results[keyword_str] = {'nouns': [], 'verbs': []} # 'adjectives' -> 'verbs'
             continue
