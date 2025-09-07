@@ -53,12 +53,23 @@ def extract_nva(text: str):
     return nouns, verbs, adjectives, attention_analysis_result, keywords
 
 def save_pos_result_to_db(nouns, verbs, adjectives, keyword, user_input_id: int, db: Session):
+    # keyword 처리: 중복 제거 및 문자열 변환
+    if isinstance(keyword, list) and keyword and isinstance(keyword[0], dict):
+        # 딕셔너리 리스트에서 'keyword' 값들 추출 후 중복 제거
+        keywords = list(dict.fromkeys([item.get('keyword', '') for item in keyword if item.get('keyword')]))
+    elif isinstance(keyword, (list, tuple, set)):
+        # 일반 리스트/튜플/셋에서 중복 제거
+        keywords = list(dict.fromkeys([str(k) for k in keyword if k]))
+    else:
+        # 단일 값인 경우
+        keywords = [str(keyword)] if keyword else []
+    
     pos_result_db = schemas.POSResultCreate(
         user_input_id=user_input_id,
         noun=", ".join(nouns) if nouns else "",
         verb=", ".join(verbs) if verbs else "",
         adjective=", ".join(adjectives) if adjectives else "",
-        keyword=", ".join(keyword) if isinstance(keyword, (list, tuple, set)) else str(keyword or "")
+        keyword=", ".join(keywords)
     )
     crud.create_pos_result(db=db, result=pos_result_db)
 

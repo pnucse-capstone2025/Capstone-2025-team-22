@@ -55,46 +55,26 @@ export const mockDataNoKeywords: AnalyzedText = {
 };
 
 export const mockDataAnalysis = {
-  keywordList: ["인터넷주소", "정보보호", "디지털"],
-  keywordAnalysis: [
-    {
-      keyword: "인터넷주소",
-      contributions: [
-        { start: 0, end: 10, score: 10 },
-        { start: 66, end: 71, score: 9 },
-        { start: 134, end: 139, score: 8 },
-        { start: 263, end: 268, score: 7 },
-        { start: 367, end: 372, score: 6 },
-        { start: 420, end: 425, score: 2 },
-        { start: 500, end: 505, score: 4 },
-        { start: 600, end: 605, score: 3 },
-        { start: 700, end: 705, score: 8 },
-      ],
+  준공승인: {
+    nouns: {
+      행동_341_343: { keyword: "행동", score: 0.8911607265472412, start: 341, end: 343 },
+      미비_286_288: { keyword: "미비", score: 1.1392326354980469, start: 286, end: 288 },
+      사항_283_285: { keyword: "사항", score: 0.7490525841712952, start: 283, end: 285 },
+      예정자_326_329: { keyword: "예정자", score: 1.0591341257095337, start: 326, end: 329 },
+      일괄_48_50: { keyword: "일괄", score: 0.7451565256555518, start: 48, end: 50 },
+      제기_334_336: { keyword: "제기", score: 0.7274777293205261, start: 334, end: 336 },
+      조건부_306_309: { keyword: "조건부", score: 0.9270519614219666, start: 306, end: 309 },
+      접수_61_63: { keyword: "접수", score: 0.7340967655181885, start: 61, end: 63 },
+      행동_341_343_2: { keyword: "행동", score: 0.8911607265472412, start: 341, end: 343 }
     },
-    {
-      keyword: "정보보호",
-      contributions: [
-        { start: 25, end: 29, score: 3 },
-        { start: 150, end: 154, score: 9 },
-        { start: 250, end: 254, score: 8 },
-        { start: 350, end: 354, score: 7 },
-        { start: 450, end: 460, score: 2 },
-        { start: 550, end: 554, score: 5 },
-        { start: 650, end: 654, score: 4 },
-      ],
-    },
-    {
-      keyword: "디지털",
-      contributions: [
-        { start: 816, end: 819, score: 10 },
-        { start: 100, end: 103, score: 9 },
-        { start: 200, end: 203, score: 8 },
-        { start: 300, end: 303, score: 7 },
-        { start: 400, end: 403, score: 6 },
-        { start: 500, end: 503, score: 5 },
-      ],
-    },
-  ],
+    verbs: {
+      이루어진다는_299_305: { keyword: "이루어진다는", score: 0.5714138150215149, start: 299, end: 305 },
+      되나요_83_86: { keyword: "되나요", score: 0.33938765525817877, start: 83, end: 86 },
+      이루어진다는_299_305_2: { keyword: "이루어진다는", score: 0.5714138150215149, start: 299, end: 305 },
+      있나요_184_187: { keyword: "있나요", score: 0.23979261517524772, start: 184, end: 187 },
+      하셔도먼서_55_60: { keyword: "하셔도먼서", score: 0.27612936496734627, start: 55, end: 60 }
+    }
+  }
 };
 
 // ✅ react-d3-cloud용 변환 유틸

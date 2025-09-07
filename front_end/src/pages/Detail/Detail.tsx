@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styles from "./Detail.module.scss";
 import WordCloudPage from "@/components/WordcloudSection/WordcloudSection";
@@ -16,6 +16,21 @@ interface AnalysisResult {
   noun_count: number;
   verb_count: number;
   adjective_count: number;
+  attention_result?: AttentionResult;
+}
+
+interface AttentionResult {
+  [keyword: string]: {
+    nouns: { [key: string]: AttentionItem };
+    verbs: { [key: string]: AttentionItem };
+  };
+}
+
+interface AttentionItem {
+  keyword: string;
+  score: number;
+  start: number;
+  end: number;
 }
 
 interface RecentResult {
@@ -89,7 +104,16 @@ export const DetailPage = () => {
     }
   }, [location.state, drawerOpen, id]);
 
-  const keywords = analysisData?.keywords || [];
+  // keywords 처리 부분 수정
+  const keywords = useMemo(() => {
+    if (!analysisData?.keywords) return [];
+
+    return analysisData.keywords.map((kw: any) => {
+      if (typeof kw === "string") return kw;
+      if (typeof kw === "object" && kw?.keyword) return kw.keyword;
+      return String(kw);
+    });
+  }, [analysisData?.keywords]);
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
 
@@ -174,6 +198,7 @@ export const DetailPage = () => {
           <TextHighlighter
             text={analysisData?.text || ""}
             hoveredKeyword={selectedKeyword}
+            attentionResult={analysisData?.attention_result}
           />
         </div>
         <div className={styles.gradationScale}></div>

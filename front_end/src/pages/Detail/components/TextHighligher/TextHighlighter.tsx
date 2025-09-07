@@ -1,23 +1,55 @@
 import { memo, useMemo } from "react";
-import { mockDataAnalysis } from "@/data/mock";
+
+interface AttentionResult {
+  [keyword: string]: {
+    nouns: { [key: string]: AttentionItem };
+    verbs: { [key: string]: AttentionItem };
+  };
+}
+
+interface AttentionItem {
+  keyword: string;
+  score: number;
+  start: number;
+  end: number;
+}
 
 interface Props {
   text: string;
   hoveredKeyword: string | null;
+  attentionResult?: AttentionResult;
 }
 
-const TextHighlighter: React.FC<Props> = ({ text, hoveredKeyword }) => {
+const TextHighlighter: React.FC<Props> = ({
+  text,
+  hoveredKeyword,
+  attentionResult,
+}) => {
   const highlightedText = useMemo(() => {
-    if (!hoveredKeyword) return text;
-
-    const contributions =
-      mockDataAnalysis.keywordAnalysis.find((k) => k.keyword === hoveredKeyword)
-        ?.contributions ?? [];
-
-    if (!contributions || contributions.length === 0) {
+    if (
+      !hoveredKeyword ||
+      !attentionResult ||
+      !attentionResult[hoveredKeyword]
+    ) {
       return text;
     }
 
+    const keywordData = attentionResult[hoveredKeyword];
+    const contributions: AttentionItem[] = [];
+
+    // nouns와 verbs에서 모든 attention 아이템들을 수집
+    Object.values(keywordData.nouns || {}).forEach((item) =>
+      contributions.push(item)
+    );
+    Object.values(keywordData.verbs || {}).forEach((item) =>
+      contributions.push(item)
+    );
+
+    if (contributions.length === 0) {
+      return text;
+    }
+
+    // start 위치로 정렬
     const sorted = [...contributions].sort((a, b) => a.start - b.start);
 
     const parts: React.ReactNode[] = [];
@@ -30,7 +62,8 @@ const TextHighlighter: React.FC<Props> = ({ text, hoveredKeyword }) => {
         );
       }
 
-      const opacity = Math.min(score / 10, 1) * 0.8; // 1~10 → 0.1~1.0 사이로 변환
+      // score를 0-1 범위로 정규화 (최대 score가 1이라고 가정)
+      const opacity = Math.min(score, 1) * 0.8;
       parts.push(
         <span
           key={`hl-${i}`}
@@ -52,7 +85,7 @@ const TextHighlighter: React.FC<Props> = ({ text, hoveredKeyword }) => {
     }
 
     return parts;
-  }, [text, hoveredKeyword]);
+  }, [text, hoveredKeyword, attentionResult]);
 
   return <>{highlightedText}</>;
 };
