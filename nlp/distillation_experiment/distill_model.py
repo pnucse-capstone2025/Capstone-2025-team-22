@@ -149,7 +149,6 @@ class DistillKoKeyBERT(nn.Module):
 
         with torch.no_grad():
             predicted_tags, outputs = self.forward(input_ids, attention_mask, return_outputs=True)
-        
         if isinstance(predicted_tags, list):
             predictions = predicted_tags[0]
         else:

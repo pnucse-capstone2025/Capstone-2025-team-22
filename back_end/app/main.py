@@ -43,14 +43,16 @@ def extract_nva(text: str):
     adjectives = list(pos_result['adjectives'].keys())
     
     keywords, outputs = extract_keywords_from_text(text)
-    attention_analysis_result = analyze_keyword_attention(
-        text=text,
-        keywords_info=keywords,
-        attentions=outputs.attentions,
-        tokenizer=tokenizer
-    )
-
-    return nouns, verbs, adjectives, attention_analysis_result, keywords
+    if keywords: 
+        attention_analysis_result = analyze_keyword_attention(
+            text=text,
+            keywords_info=keywords,
+            attentions=outputs.attentions,
+            tokenizer=tokenizer
+        )
+        return nouns, verbs, adjectives, attention_analysis_result, keywords
+    else:
+        return nouns, verbs, adjectives, [], []
 
 def save_pos_result_to_db(nouns, verbs, adjectives, keyword, user_input_id: int, db: Session):
     # keyword 처리: 중복 제거 및 문자열 변환
