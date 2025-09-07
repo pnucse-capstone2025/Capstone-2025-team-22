@@ -1,0 +1,97 @@
+.searchBarContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.searchBar {
+  position: relative;
+  display: flex;
+  width: 600px;
+  max-height: 700px;
+  margin: 20px auto;
+  border: 1px solid #ededed;
+  box-shadow: 0px 0px 8px 0px rgba(98, 98, 98, 0.05);
+  border-radius: 20px;
+  overflow: auto;
+  min-height: 112px;
+
+  &:hover {
+    box-shadow: 0px 0px 8px 0px rgba(98, 98, 98, 0.1);
+  }
+
+  &:focus-within {
+    box-shadow: 0px 0px 8px 0px rgba(98, 98, 98, 0.2);
+  }
+
+  .searchInput {
+    font-family: "Pretendard";
+    flex: 1;
+    padding: 16px 20px;
+    padding-bottom: 24px;
+    font-size: 16px;
+    background-color: transparent;
+    color: #c3c3c3;
+    border: none;
+    outline: none;
+    cursor: text;
+    resize: none;
+
+    &::placeholder {
+      font-size: 16px;
+      color: #c3c3c3;
+    }
+
+    &:focus {
+      background-color: #ffffff;
+      color: #171b26;
+
+      &::placeholder {
+        color: transparent;
+      }
+    }
+  }
+}
+
+.analyzeButton {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+
+  font-family: "Pretendard";
+  background: #3ec1d3;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(62, 193, 211, 0.3);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #2ba3b5;
+    transform: translateX(-50%) translateY(-2px);
+    box-shadow: 0 6px 16px rgba(62, 193, 211, 0.4);
+  }
+
+  &:active {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

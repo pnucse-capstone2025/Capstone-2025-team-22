@@ -1,0 +1,81 @@
+@import url("https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/pretendard.css");
+
+.wrapper {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  font-family: "Pretendard";
+  align-items: start;
+  box-sizing: border-box;
+}
+
+.leftSection {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+
+.rightSection {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  height: 100%;
+  width: 100%;
+}
+
+.wordCloudSection {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 0;
+  box-sizing: border-box;
+}
+
+.noresultmsg {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.cloudContainer {
+  width: 100%;
+  height: auto;
+  margin-top: 30px;
+  position: relative;
+}
+
+.cloudContainer canvas,
+.cloudContainer svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.title {
+  color: #6b7280;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+p {
+  color: #6b7280;
+  font-size: 16px;
+  margin-top: 12px;
+}
+
+.noresultmsg {
+  margin-top: 70px;
+  color: #6b7280;
+  font-size: 16px;
+}
