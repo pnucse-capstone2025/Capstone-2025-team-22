@@ -252,3 +252,14 @@ db_data/
 *.temp
 .cache/
 .temp/
+
+results/
+!nlp/results/plots/distill_kokeybert_confusion_matrix.png
+!nlp/results/plots/kokeybert_confusion_matrix.png
+!nlp/results/plots/keybert_1_confusion_matrix.png
+!nlp/results/plots/keybert_3_confusion_matrix.png
+!nlp/results/plots/keybert_5_confusion_matrix.png
+!nlp/results/plots/inference_time_barplot.png
+!nlp/results/plots/precision_comparison_by_progress.png
+!nlp/results/plots/recall_comparison_by_progress.png
+!nlp/results/plots/f1_comparison_by_progress.png
