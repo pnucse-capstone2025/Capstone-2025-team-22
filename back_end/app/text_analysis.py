@@ -71,8 +71,15 @@ def _estimate_token_offsets(text, tokens):
             offsets.append((0, 0)) # 실제 텍스트에 해당하지 않음
             continue
         
-        # 서브워드 접두사 '##' 제거
-        clean_token = token.replace('##', '')
+        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분 수정 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+        # 토크나이저가 추가하는 특수문자( )와 서브워드 접두사(##)를 모두 제거
+        clean_token = token.lstrip('▁##')
+        
+        # 만약 clean_token이 비어있으면 (예: 토큰이 ' '였던 경우) 건너뜀
+        if not clean_token:
+            offsets.append((0, 0))
+            continue
+        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         
         try:
             # 현재 위치부터 토큰 검색
@@ -191,7 +198,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
             
             for word, spans in word_spans.items():
                 for span_start, span_end in spans:
-                    if token_start <= span_end and token_end >= span_start:
+                    if token_start < span_end and token_end > span_start:
                         # 각 위치별로 별도의 항목으로 저장
                         word_info[word].append({
                             'score': score.item(),
