@@ -108,11 +108,13 @@ export const DetailPage = () => {
   const keywords = useMemo(() => {
     if (!analysisData?.keywords) return [];
 
-    return analysisData.keywords.map((kw: any) => {
+    const processedKeywords = analysisData.keywords.map((kw: any) => {
       if (typeof kw === "string") return kw;
-      if (typeof kw === "object" && kw?.keyword) return kw.keyword;
+      if (typeof kw === "object" && kw && "keyword" in kw) return kw.keyword;
       return String(kw);
     });
+
+    return [...new Set(processedKeywords)];
   }, [analysisData?.keywords]);
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
