@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 import torch, json
 
 from app import models, schemas, crud, database
-from app.text_analysis import extract_pos_frequencies, analyze_keyword_attention
+from app.text_analysis import extract_nouns_verbs_adjectives, analyze_keyword_attention
 from app.database import Base, engine
 from app.nlp.distillation_experiment.distill_model import DistillKoKeyBERT
 from app.nlp.kobert_tokenizer.kobert_tokenizer import KoBERTTokenizer
@@ -118,7 +118,8 @@ def extract_keywords(text: str = Form(...), db: Session = Depends(database.get_d
         "keywords": list(keyword) if keyword else [], # 빈 set일 경우 빈 리스트 반환
         "noun_count": len(nouns),
         "verb_count": len(verbs),
-        "adjective_count": len(adjectives)
+        "adjective_count": len(adjectives),
+        "attention_result": attention_analysis_result
     })
 
 app.mount("/", StaticFiles(directory="app/static", html=True), name="static")

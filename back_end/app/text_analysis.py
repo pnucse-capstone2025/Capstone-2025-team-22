@@ -96,11 +96,11 @@ def _filter_substrings(result_list):
     예: ['국회의원', '의원'] -> ['국회의원']
     """
     # 점수가 높아 순서가 빠른 단어부터 처리하므로, 긴 단어가 유지될 확률이 높음
-    words_to_check = [item['word'] for item in result_list]
+    words_to_check = [item['keyword'] for item in result_list]
     filtered_results = []
 
     for item in result_list:
-        current_word = item['word']
+        current_word = item['keyword']
         # 현재 단어가 다른 단어의 부분 문자열인지 확인
         is_substring = any(current_word in other_word for other_word in words_to_check if current_word != other_word)
         
@@ -183,7 +183,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
         temp_attention_matrix[keyword_indices, keyword_indices] = 0
         keyword_attention_scores = temp_attention_matrix[keyword_indices, :].sum(dim=0)
 
-        word_info = defaultdict(lambda: {'score': 0.0, 'spans': set()})
+        word_info = defaultdict(list)  # 각 위치별로 별도 항목 저장
         for i, score in enumerate(keyword_attention_scores):
             if score.item() == 0: continue
             token_start, token_end = estimated_offsets[i]
@@ -192,15 +192,18 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
             for word, spans in word_spans.items():
                 for span_start, span_end in spans:
                     if token_start < span_end and token_end > span_start:
-                        word_info[word]['score'] += score.item()
-                        word_info[word]['spans'].add((span_start, span_end))
+                        # 각 위치별로 별도의 항목으로 저장
+                        word_info[word].append({
+                            'score': score.item(),
+                            'span': (span_start, span_end)
+                        })
                         break
         
         keyword_result = {'nouns': [], 'verbs': []} # 'adjectives' -> 'verbs'
         # 재구성된 구문의 품사 정보를 담은 맵
         phrase_pos_map = {p['phrase']: p['pos'] for p in reconstructed_phrases}
         
-        for word, info in word_info.items():
+        for word, info_list in word_info.items():
             # 필터 1: attended 단어가 전체 키워드 중 하나와 일치하면 제외
             if word in keyword_strings_set: 
                 continue
@@ -212,20 +215,42 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
             # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
                 
             pos = phrase_pos_map.get(word, "")
-            entry = {'word': word, 'score': info['score'], 'locations': sorted(list(info['spans']))}
             
-            if pos == 'Noun':
-                keyword_result['nouns'].append(entry)
-            elif pos == 'Verb':
-                keyword_result['verbs'].append(entry)
+            # 각 위치별로 별도의 항목 생성
+            for info in info_list:
+                entry = {
+                    'keyword': word, 
+                    'score': info['score'], 
+                    'start': info['span'][0],
+                    'end': info['span'][1]
+                }
+                
+                if pos == 'Noun':
+                    keyword_result['nouns'].append(entry)
+                elif pos == 'Verb':
+                    keyword_result['verbs'].append(entry)
 
         # 점수 기준으로 내림차순 정렬
         nouns_sorted = sorted(keyword_result['nouns'], key=lambda x: x['score'], reverse=True)
         verbs_sorted = sorted(keyword_result['verbs'], key=lambda x: x['score'], reverse=True)
 
         # 부분 문자열 필터링 적용 후 상위 10개 선택
-        keyword_result['nouns'] = _filter_substrings(nouns_sorted)[:10]
-        keyword_result['verbs'] = _filter_substrings(verbs_sorted)[:10]
+        filtered_nouns = _filter_substrings(nouns_sorted)[:10]
+        filtered_verbs = _filter_substrings(verbs_sorted)[:10]
+        
+        # 리스트를 딕셔너리로 변환
+        nouns_dict = {}
+        for i, noun_item in enumerate(filtered_nouns):
+            key = f"{noun_item['keyword']}_{noun_item['start']}_{noun_item['end']}"
+            nouns_dict[key] = noun_item
+        
+        verbs_dict = {}
+        for i, verb_item in enumerate(filtered_verbs):
+            key = f"{verb_item['keyword']}_{verb_item['start']}_{verb_item['end']}"
+            verbs_dict[key] = verb_item
+        
+        keyword_result['nouns'] = nouns_dict
+        keyword_result['verbs'] = verbs_dict
         
         final_results[keyword_str] = keyword_result
         

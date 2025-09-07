@@ -302,30 +302,30 @@ if __name__ == '__main__':
     # 테스트 입력
     text = "주택정책과 담당께서 어제 수많은 안건들에 대해서 일괄 답변하셨는데 동일 민원이 많아서 일괄 답변을 하셨다면서 첨부된 자료 수준이 이 정도인 게 말이 되나요? 준공승인 거부 건으로 제시한 것뿐만이 아니라 별도로 문제 및 민원 제기한 2층 실외기 위치에 대한 사항, 2층 가스배관 노출 및 내진설계에 대한 사항에 대한 답변은 어디에 있나요? 개선사항 및 공사 미비사항, 입주자 사전점검 하자 사항에 대해서는 검증을 완료하고 준공승인이 되어야 할 것입니다. 안전에 대한 문제가 해결 검증이 되지 않는 상태, 하자사항 미비 상태로 통상적으로 이루어진다는 조건부 준공승인은 절대 불가하며 입주예정자들의 이의제기 및 집단행동은 계속될 것입니다."
     keywords_info, outputs = model.extract_keywords(text, tokenizer)
-    print("--- 추출된 키워드 ---")
     pprint.pprint(keywords_info)
 
     if keywords_info and outputs and outputs.attentions:
-        print("\n--- 키워드별 어텐션 분석 결과 ---")
         attention_analysis_result = analyze_keyword_attention(
             text=text,
             keywords_info=keywords_info,
             attentions=outputs.attentions,
             tokenizer=tokenizer
         )
+        print("\n--- attention_analysis_result 출력 ---")
         pprint.pprint(attention_analysis_result)
+        
 
         # --- 위치 인덱스 검증 코드 (수정됨) ---
         print("\n--- 위치 인덱스 검증 시작 ---")
         verification_passed = True
         # 키워드별로 결과를 순회
         for keyword, results_dict in attention_analysis_result.items():
-            for pos_tag, results_list in results_dict.items():
-                for item in results_list:
-                    word = item['word']
-                    for start, end in item['locations']:
-                        sliced_text = text[start:end]
-                        if word != sliced_text:
+            for pos_tag, results_dict_inside in results_dict.items():
+                for item in results_dict_inside.values():
+                    word = item['keyword']
+                    start, end = item['start'], item['end']
+                    sliced_text = text[start:end]
+                    if word != sliced_text:
                             print(f"[검증 실패] 키워드: '{keyword}', 단어: '{word}', 위치: ({start},{end}), 추출된 텍스트: '{sliced_text}'")
                             verification_passed = False
         
