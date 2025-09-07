@@ -141,9 +141,10 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
     while i < len(pos_tokens):
         word, tag = pos_tokens[i]
         
-        # 명사인 경우
+        # 명사인 경우 - 한글자 명사 제외
         if tag.startswith('NN'):
-            reconstructed_phrases.append({'phrase': word, 'pos': 'Noun'})
+            if len(word) > 1:  # 한글자 명사 제외
+                reconstructed_phrases.append({'phrase': word, 'pos': 'Noun'})
             i += 1
         # 동사인 경우, 완전한 동사구로 재구성
         elif tag.startswith('VV'):

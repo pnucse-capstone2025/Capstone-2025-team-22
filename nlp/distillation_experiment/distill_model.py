@@ -164,10 +164,13 @@ class DistillKoKeyBERT(nn.Module):
             return [], None
         final_keywords = []
         keyword_strings = {kw[0] for kw in keywords_with_indices}
+        # extract_keywords 메서드의 167-169번째 줄을 다음과 같이 수정
         for keyword, start, end in keywords_with_indices:
+            # 1글자 키워드 제외
+            if len(keyword) <= 1:
+                continue
             if not any(keyword in other for other in keyword_strings if keyword != other):
                 final_keywords.append({'keyword': keyword, 'start': start, 'end': end})
-        
         return final_keywords, outputs
 
     def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer, text):
