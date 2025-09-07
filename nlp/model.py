@@ -4,6 +4,7 @@ from transformers import BertModel, BertConfig
 from TorchCRF import CRF
 from typing import Optional
 from torch.nn.utils.rnn import pad_sequence
+#from app.nlp.utils.extract import extract_keywords_from_bio_tags
 from utils.extract import extract_keywords_from_bio_tags
 
 class KoKeyBERT(nn.Module):
