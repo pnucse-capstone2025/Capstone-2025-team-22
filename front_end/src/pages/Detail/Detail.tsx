@@ -6,6 +6,7 @@ import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
 //import { mockData, mockDataNoKeywords } from "@/data/mock";
 import TextHighlighter from "@/pages/Detail/components/TextHighligher/TextHighlighter";
+import GradationScale from "@/pages/Detail/components/GradationScale/GradationScale";
 
 interface AnalysisResult {
   text: string;
@@ -56,6 +57,11 @@ export const DetailPage = () => {
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  const [clickedWordScore, setClickedWordScore] = useState<{
+    score: number;
+    type: "noun" | "verb";
+  } | null>(null);
+
   useEffect(() => {
     const fetchRecentResults = async () => {
       try {
@@ -97,14 +103,12 @@ export const DetailPage = () => {
     if (location.state && location.state.analysisResult) {
       setAnalysisData(location.state.analysisResult);
     } else if (id) {
-      // URL에서 id를 가져와서 데이터를 fetch
       fetchAnalysisResultById(id);
     } else {
       console.error("분석 결과 데이터가 없습니다.");
     }
   }, [location.state, drawerOpen, id]);
 
-  // keywords 처리 부분 수정
   const keywords = useMemo(() => {
     if (!analysisData?.keywords) return [];
 
@@ -116,6 +120,28 @@ export const DetailPage = () => {
 
     return [...new Set(processedKeywords)];
   }, [analysisData?.keywords]);
+
+  const maxScores = useMemo(() => {
+    if (!analysisData?.attention_result || !selectedKeyword) {
+      return { noun: 1.0, verb: 1.0 };
+    }
+
+    const keywordData = analysisData.attention_result[selectedKeyword];
+    let nounMax = 0;
+    let verbMax = 0;
+
+    Object.values(keywordData?.nouns || {}).forEach((item) => {
+      nounMax = Math.max(nounMax, item.score);
+    });
+    Object.values(keywordData?.verbs || {}).forEach((item) => {
+      verbMax = Math.max(verbMax, item.score);
+    });
+
+    return {
+      noun: nounMax > 0 ? nounMax : 1.0,
+      verb: verbMax > 0 ? verbMax : 1.0,
+    };
+  }, [analysisData?.attention_result, selectedKeyword]);
 
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
 
@@ -153,6 +179,17 @@ export const DetailPage = () => {
     } catch (error) {
       console.error("분석 중 오류 발생:", error);
     }
+  };
+
+  const handleWordClick = (score: number, type: "noun" | "verb") => {
+    const relevantMaxScore = type === "noun" ? maxScores.noun : maxScores.verb;
+    console.log(
+      `클릭된 단어 정보 - 타입: ${type}, 점수: ${score}, 최대점수: ${relevantMaxScore}`
+    );
+    console.log(
+      `스케일 바 위치: ${((score / relevantMaxScore) * 100).toFixed(1)}%`
+    );
+    setClickedWordScore({ score, type });
   };
 
   return (
@@ -201,9 +238,16 @@ export const DetailPage = () => {
             text={analysisData?.text || ""}
             hoveredKeyword={selectedKeyword}
             attentionResult={analysisData?.attention_result}
+            onWordClick={handleWordClick}
           />
         </div>
-        <div className={styles.gradationScale}></div>
+        <div className={styles.gradationScaleWrapper}>
+          <GradationScale
+            maxScores={maxScores}
+            selectedKeyword={selectedKeyword}
+            clickedWordScore={clickedWordScore}
+          />
+        </div>
         <h3 className={styles.contentTitle}>품사별 분석 결과</h3>
         <p className={styles.contentDescription}>
           품사 분석 과정에는 MeCab 라이브러리를 사용하였습니다.

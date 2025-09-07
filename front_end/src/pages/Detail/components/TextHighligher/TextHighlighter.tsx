@@ -18,12 +18,14 @@ interface Props {
   text: string;
   hoveredKeyword: string | null;
   attentionResult?: AttentionResult;
+  onWordClick?: (score: number, type: "noun" | "verb") => void;
 }
 
 const TextHighlighter: React.FC<Props> = ({
   text,
   hoveredKeyword,
   attentionResult,
+  onWordClick,
 }) => {
   const highlightedText = useMemo(() => {
     if (
@@ -76,7 +78,9 @@ const TextHighlighter: React.FC<Props> = ({
             backgroundColor,
             borderRadius: "4px",
             padding: "1px 1px",
+            cursor: onWordClick ? "pointer" : "default",
           }}
+          onClick={() => onWordClick?.(score, type)}
         >
           {text.slice(start, end)}
         </span>
@@ -90,7 +94,7 @@ const TextHighlighter: React.FC<Props> = ({
     }
 
     return parts;
-  }, [text, hoveredKeyword, attentionResult]);
+  }, [text, hoveredKeyword, attentionResult, onWordClick]);
 
   return <>{highlightedText}</>;
 };
