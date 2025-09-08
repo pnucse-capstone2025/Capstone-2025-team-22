@@ -27,3 +27,25 @@ def create_pos_result(db: Session, result: schemas.POSResultCreate):
 # crud.py
 def get_recent_pos_results(db: Session, limit: int = 10):
     return db.query(models.PosResult).order_by(models.PosResult.index.desc()).limit(limit).all()
+
+def create_attention_results(db: Session, results: list[schemas.AttentionResultCreate]):
+    db_attention_results = []
+    for result in results:
+        db_attention_result = models.AttentionResult(
+            user_input_id=result.user_input_id,
+            keyword=result.keyword,
+            attention_type=result.attention_type,
+            attended_word=result.attended_word,
+            score=result.score,
+            start_offset=result.start_offset,
+            end_offset=result.end_offset
+        )
+        db.add(db_attention_result)
+        db_attention_results.append(db_attention_result)
+    db.commit()
+    for result in db_attention_results:
+        db.refresh(result)
+    return db_attention_results
+
+def get_attention_results_by_user_input_id(db: Session, user_input_id: int):
+    return db.query(models.AttentionResult).filter(models.AttentionResult.user_input_id == user_input_id).all()
