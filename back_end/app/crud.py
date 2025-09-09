@@ -25,7 +25,7 @@ def create_pos_result(db: Session, result: schemas.POSResultCreate):
     return pos_result
 
 # crud.py
-def get_recent_pos_results(db: Session, limit: int = 10):
+def get_recent_pos_results(db: Session, limit: int = 15):
     return db.query(models.PosResult).order_by(models.PosResult.index.desc()).limit(limit).all()
 
 def create_attention_results(db: Session, results: list[schemas.AttentionResultCreate]):
