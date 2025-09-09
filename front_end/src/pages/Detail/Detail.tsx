@@ -1,11 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import styles from "./Detail.module.scss";
-import WordCloudPage from "@/components/WordcloudSection/WordcloudSection";
+import WordCloudPage from "@/pages/Detail/Sections/WordcloudSection/WordcloudSection";
 import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
-import TextHighlighter from "@/pages/Detail/components/TextHighligher/TextHighlighter";
-import GradationScale from "@/pages/Detail/components/GradationScale/GradationScale";
+import KeywordAnalysisSection from "@/pages/Detail/Sections/KeywordAnalysisSection/KeywordAnalysisSection";
 
 interface AnalysisResult {
   text: string;
@@ -142,40 +141,6 @@ export const DetailPage = () => {
     }
   }, [location.state, drawerOpen, id]);
 
-  const keywords = useMemo(() => {
-    if (!analysisData?.keywords) return [];
-
-    const processedKeywords = analysisData.keywords.map((kw: any) => {
-      if (typeof kw === "string") return kw;
-      if (typeof kw === "object" && kw && "keyword" in kw) return kw.keyword;
-      return String(kw);
-    });
-
-    return [...new Set(processedKeywords)];
-  }, [analysisData?.keywords]);
-
-  const maxScores = useMemo(() => {
-    if (!analysisData?.attention_result || !selectedKeyword) {
-      return { noun: 1.0, verb: 1.0 };
-    }
-
-    const keywordData = analysisData.attention_result[selectedKeyword];
-    let nounMax = 0;
-    let verbMax = 0;
-
-    Object.values(keywordData?.nouns || {}).forEach((item) => {
-      nounMax = Math.max(nounMax, item.score);
-    });
-    Object.values(keywordData?.verbs || {}).forEach((item) => {
-      verbMax = Math.max(verbMax, item.score);
-    });
-
-    return {
-      noun: nounMax > 0 ? nounMax : 1.0,
-      verb: verbMax > 0 ? verbMax : 1.0,
-    };
-  }, [analysisData?.attention_result, selectedKeyword]);
-
   const toggleDrawer = () => setDrawerOpen((prev) => !prev);
 
   const handleSearch = async (query: string) => {
@@ -215,13 +180,7 @@ export const DetailPage = () => {
   };
 
   const handleWordClick = (score: number, type: "noun" | "verb") => {
-    const relevantMaxScore = type === "noun" ? maxScores.noun : maxScores.verb;
-    console.log(
-      `클릭된 단어 정보 - 타입: ${type}, 점수: ${score}, 최대점수: ${relevantMaxScore}`
-    );
-    console.log(
-      `스케일 바 위치: ${((score / relevantMaxScore) * 100).toFixed(1)}%`
-    );
+    console.log(`클릭된 단어 정보 - 타입: ${type}, 점수: ${score}`);
     setClickedWordScore({ score, type });
   };
 
@@ -245,42 +204,13 @@ export const DetailPage = () => {
         <p className={styles.contentDescription}>
           키워드를 클릭하시면 해당 키워드가 추출된 이유를 확인하실 수 있습니다.
         </p>
-        <div className={styles.keywordBox}>
-          {keywords.length > 0 ? (
-            <div className={styles.keywordButtons}>
-              {keywords.map((kw: string, i: number) => (
-                <button
-                  key={i}
-                  className={`${styles.keywordButton} ${
-                    selectedKeyword === kw ? styles.selected : ""
-                  }`}
-                  onClick={() =>
-                    setSelectedKeyword(selectedKeyword === kw ? null : kw)
-                  }
-                >
-                  {kw}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <span className={styles.highlight}>추출된 키워드가 없습니다</span>
-          )}
-        </div>
-        <div className={styles.textContent}>
-          <TextHighlighter
-            text={analysisData?.text || ""}
-            hoveredKeyword={selectedKeyword}
-            attentionResult={analysisData?.attention_result}
-            onWordClick={handleWordClick}
-          />
-        </div>
-        <div className={styles.gradationScaleWrapper}>
-          <GradationScale
-            maxScores={maxScores}
-            selectedKeyword={selectedKeyword}
-            clickedWordScore={clickedWordScore}
-          />
-        </div>
+        <KeywordAnalysisSection
+          analysisData={analysisData}
+          selectedKeyword={selectedKeyword}
+          clickedWordScore={clickedWordScore}
+          onKeywordSelect={setSelectedKeyword}
+          onWordClick={handleWordClick}
+        />
         <h3 className={styles.contentTitle}>품사별 분석 결과</h3>
         <p className={styles.contentDescription}>
           품사 분석 과정에는 Mecab 라이브러리를 사용하였습니다.
