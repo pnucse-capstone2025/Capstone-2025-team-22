@@ -1,16 +1,4 @@
-export interface AnalyzedText {
-  input: string;
-  saveAt: string;
-  noun: string[];
-  verb: string[];
-  adverb: string[];
-  key_word: string[];
-}
-
-export interface WordCloudDatum {
-  text: string;
-  value: number;
-}
+import type { AnalyzedText, WordCloudDatum } from '../types';
 
 export const mockData: AnalyzedText = {
   saveAt: "2025-08-05",

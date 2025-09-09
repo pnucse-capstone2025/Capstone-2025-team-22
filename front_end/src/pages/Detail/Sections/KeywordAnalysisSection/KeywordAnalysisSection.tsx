@@ -3,31 +3,7 @@ import styles from "./KeywordAnalysisSection.module.scss";
 import TextHighlighter from "@/pages/Detail/components/TextHighligher/TextHighlighter";
 import GradationScale from "@/pages/Detail/components/GradationScale/GradationScale";
 
-interface AttentionResult {
-  [keyword: string]: {
-    nouns: { [key: string]: AttentionItem };
-    verbs: { [key: string]: AttentionItem };
-  };
-}
-
-interface AttentionItem {
-  keyword: string;
-  score: number;
-  start: number;
-  end: number;
-}
-
-interface KeywordAnalysisSectionProps {
-  analysisData: {
-    text: string;
-    keywords: string[];
-    attention_result?: AttentionResult;
-  } | null;
-  selectedKeyword: string | null;
-  clickedWordScore: { score: number; type: "noun" | "verb" } | null;
-  onKeywordSelect: (keyword: string | null) => void;
-  onWordClick: (score: number, type: "noun" | "verb") => void;
-}
+import type { KeywordAnalysisSectionProps } from "../../../../types";
 
 const KeywordAnalysisSection: React.FC<KeywordAnalysisSectionProps> = ({
   analysisData,

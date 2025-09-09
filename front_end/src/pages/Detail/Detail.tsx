@@ -5,42 +5,7 @@ import WordCloudPage from "@/pages/Detail/Sections/WordcloudSection/WordcloudSec
 import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
 import KeywordAnalysisSection from "@/pages/Detail/Sections/KeywordAnalysisSection/KeywordAnalysisSection";
-
-interface AnalysisResult {
-  text: string;
-  nouns: string[];
-  verbs: string[];
-  adjectives: string[];
-  keywords: string[];
-  noun_count: number;
-  verb_count: number;
-  adjective_count: number;
-  attention_result?: AttentionResult;
-}
-
-interface AttentionResult {
-  [keyword: string]: {
-    nouns: { [key: string]: AttentionItem };
-    verbs: { [key: string]: AttentionItem };
-  };
-}
-
-interface AttentionItem {
-  keyword: string;
-  score: number;
-  start: number;
-  end: number;
-}
-
-interface RecentResult {
-  id: number;
-  text: string;
-  created_at: string;
-  nouns: string[];
-  verbs: string[];
-  adjectives: string[];
-  keywords: string[];
-}
+import type { AnalysisResult, RecentResult } from "@/types";
 
 export const DetailPage = () => {
   const { id } = useParams<{ id: string }>();

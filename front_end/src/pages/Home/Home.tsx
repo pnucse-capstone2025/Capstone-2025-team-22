@@ -4,15 +4,7 @@ import SearchBar from "@/components/SearchBar/SearchBar";
 import Drawer from "@/components/Drawer/Drawer";
 import styles from "./Home.module.scss";
 
-interface RecentResult {
-  id: number;
-  text: string;
-  created_at: string;
-  nouns: string[];
-  verbs: string[];
-  adjectives: string[];
-  keywords: string[];
-}
+import type { RecentResult } from "../../types";
 
 export const HomePage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);

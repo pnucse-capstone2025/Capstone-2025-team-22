@@ -1,11 +1,7 @@
 import { useMemo } from "react";
 import styles from "./GradationScale.module.scss";
 
-interface GradationScaleProps {
-  maxScores?: { noun: number; verb: number };
-  selectedKeyword?: string | null;
-  clickedWordScore?: { score: number; type: "noun" | "verb" } | null;
-}
+import type { GradationScaleProps } from "../../../../types";
 
 const GradationScale: React.FC<GradationScaleProps> = ({
   maxScores = { noun: 1.0, verb: 1.0 },
