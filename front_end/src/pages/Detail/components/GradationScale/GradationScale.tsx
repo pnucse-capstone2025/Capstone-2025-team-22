@@ -38,6 +38,29 @@ const GradationScale: React.FC<GradationScaleProps> = ({
     return Math.max(0, Math.min(100, position));
   };
 
+  // 실제 하이라이트 색상 계산 (TextHighlighter와 동일한 로직)
+  const getActualHighlightColor = (score: number, type: 'noun' | 'verb') => {
+    const opacity = Math.min(score, 1) * 0.8;
+    return type === 'noun'
+      ? `rgba(220, 53, 69, ${opacity})`
+      : `rgba(30, 144, 255, ${opacity})`;
+  };
+
+  // 동적 그라디언트 생성
+  const generateScaleGradient = (maxScore: number, type: 'noun' | 'verb') => {
+    const baseColor = type === 'noun' ? '220, 53, 69' : '30, 144, 255';
+    const steps = [];
+    
+    for (let i = 0; i <= 4; i++) {
+      const ratio = i / 4; // 0, 0.25, 0.5, 0.75, 1
+      const score = maxScore * ratio;
+      const opacity = Math.min(score, 1) * 0.8;
+      steps.push(`rgba(${baseColor}, ${opacity}) ${ratio * 100}%`);
+    }
+    
+    return `linear-gradient(to right, ${steps.join(', ')})`;
+  };
+
   return (
     <div className={styles.gradationScale}>
       <div className={styles.title}>
@@ -54,15 +77,23 @@ const GradationScale: React.FC<GradationScaleProps> = ({
               <span className={`${styles.colorDot} ${styles.nounDot}`}></span>
               명사
             </div>
-            <div className={`${styles.scaleBar} ${styles.nounScale}`}>
+            <div 
+              className={styles.scaleBar}
+              style={{ 
+                background: generateScaleGradient(maxScores.noun, 'noun')
+              }}
+            >
               {clickedWordScore?.type === "noun" && (
                 <div
-                  className={`${styles.scoreMarker} ${styles.nounMarker}`}
+                  className={styles.scoreMarker}
                   style={{
                     left: `${getMarkerPosition(
                       clickedWordScore.score,
                       maxScores.noun
                     )}%`,
+                    backgroundColor: getActualHighlightColor(clickedWordScore.score, 'noun'),
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                   }}
                 />
               )}
@@ -84,15 +115,23 @@ const GradationScale: React.FC<GradationScaleProps> = ({
               <span className={`${styles.colorDot} ${styles.verbDot}`}></span>
               동사
             </div>
-            <div className={`${styles.scaleBar} ${styles.verbScale}`}>
+            <div 
+              className={styles.scaleBar}
+              style={{ 
+                background: generateScaleGradient(maxScores.verb, 'verb')
+              }}
+            >
               {clickedWordScore?.type === "verb" && (
                 <div
-                  className={`${styles.scoreMarker} ${styles.verbMarker}`}
+                  className={styles.scoreMarker}
                   style={{
                     left: `${getMarkerPosition(
                       clickedWordScore.score,
                       maxScores.verb
                     )}%`,
+                    backgroundColor: getActualHighlightColor(clickedWordScore.score, 'verb'),
+                    border: '2px solid #ffffff',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
                   }}
                 />
               )}

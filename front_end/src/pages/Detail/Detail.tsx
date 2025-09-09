@@ -4,7 +4,6 @@ import styles from "./Detail.module.scss";
 import WordCloudPage from "@/components/WordcloudSection/WordcloudSection";
 import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
-//import { mockData, mockDataNoKeywords } from "@/data/mock";
 import TextHighlighter from "@/pages/Detail/components/TextHighligher/TextHighlighter";
 import GradationScale from "@/pages/Detail/components/GradationScale/GradationScale";
 
@@ -50,9 +49,6 @@ export const DetailPage = () => {
 
   const [analysisData, setAnalysisData] = useState<AnalysisResult | null>(null);
   const [recentResults, setRecentResults] = useState<RecentResult[]>([]);
-
-  //const currentData = id === "2" ? mockDataNoKeywords : mockData;
-  //const keywords = currentData.key_word;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -87,7 +83,6 @@ export const DetailPage = () => {
         const data = await response.json();
         setAnalysisData(data);
         if (data.keywords && data.keywords.length > 0) {
-          setSelectedKeyword(data.keywords[0]);
         }
       } catch (error) {
         console.error(
@@ -102,6 +97,44 @@ export const DetailPage = () => {
 
     if (location.state && location.state.analysisResult) {
       setAnalysisData(location.state.analysisResult);
+      const data = location.state.analysisResult;
+      if (data.keywords && data.keywords.length > 0) {
+        const firstKeyword = data.keywords[0];
+        setSelectedKeyword(firstKeyword);
+
+        setTimeout(() => {
+          if (data.attention_result && data.attention_result[firstKeyword]) {
+            const keywordData = data.attention_result[firstKeyword];
+            const allWords: Array<{
+              score: number;
+              type: "noun" | "verb";
+              start: number;
+            }> = [];
+
+            Object.values(keywordData.nouns || {}).forEach((item: any) => {
+              allWords.push({
+                score: item.score,
+                type: "noun",
+                start: item.start,
+              });
+            });
+            Object.values(keywordData.verbs || {}).forEach((item: any) => {
+              allWords.push({
+                score: item.score,
+                type: "verb",
+                start: item.start,
+              });
+            });
+
+            allWords.sort((a, b) => a.start - b.start);
+
+            if (allWords.length > 0) {
+              const firstWord = allWords[0];
+              handleWordClick(firstWord.score, firstWord.type);
+            }
+          }
+        }, 100);
+      }
     } else if (id) {
       fetchAnalysisResultById(id);
     } else {
@@ -250,7 +283,7 @@ export const DetailPage = () => {
         </div>
         <h3 className={styles.contentTitle}>품사별 분석 결과</h3>
         <p className={styles.contentDescription}>
-          품사 분석 과정에는 MeCab 라이브러리를 사용하였습니다.
+          품사 분석 과정에는 Mecab 라이브러리를 사용하였습니다.
         </p>
         <div className={styles.detailContainer}>
           <WordCloudPage
