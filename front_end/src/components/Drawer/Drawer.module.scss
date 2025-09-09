@@ -27,8 +27,8 @@
 }
 
 .drawerBlock {
-  height: 80px;
-  padding: 20px 15px;
+  height: 85px;
+  padding: 15px;
   margin: 12px 0;
   box-sizing: border-box;
   border: 1px solid #ececec;
@@ -38,6 +38,7 @@
   cursor: pointer;
   color: #6b7073;
   text-align: left;
+  line-height: 1.2;
 
   display: flex;
   flex-direction: column;

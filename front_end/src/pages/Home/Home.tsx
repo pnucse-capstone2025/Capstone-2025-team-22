@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import SearchBar from "@/components/SearchBar/SearchBar";
 import Drawer from "@/components/Drawer/Drawer";
 import styles from "./Home.module.scss";
-
-import type { RecentResult } from "../../types";
+import type { RecentResult } from "@/types";
+import { getRecentResults } from "@/api/services/results";
+import { extractKeywords } from "@/api/services/analysis";
 
 export const HomePage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -16,12 +17,8 @@ export const HomePage = () => {
   useEffect(() => {
     const fetchRecentResults = async () => {
       try {
-        const response = await fetch("http://localhost:8000/recent_results");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setRecentResults(data.results || []);
+        const results = await getRecentResults();
+        setRecentResults(results);
       } catch (error) {
         console.error("최근 검색 기록을 불러오는 중 오류 발생:", error);
       }
@@ -33,27 +30,13 @@ export const HomePage = () => {
   const handleSearch = async (query: string) => {
     console.log("분석:", query);
     try {
-      const response = await fetch("http://localhost:8000/extract_keywords", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          text: query,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = await extractKeywords(query);
       console.log("분석 결과:", result);
 
       setRecentResults((prevResults) =>
         [
           {
-            id: result.id,
+            id: Date.now(), // 임시 ID 생성
             text: result.text,
             created_at: new Date().toISOString().slice(0, 10),
             nouns: result.nouns,

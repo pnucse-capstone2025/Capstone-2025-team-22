@@ -6,6 +6,8 @@ import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
 import KeywordAnalysisSection from "@/pages/Detail/Sections/KeywordAnalysisSection/KeywordAnalysisSection";
 import type { AnalysisResult, RecentResult } from "@/types";
+import { getRecentResults } from "@/api/services/results";
+import { getAnalysisResult, extractKeywords } from "@/api/services/analysis";
 
 export const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,12 +27,8 @@ export const DetailPage = () => {
   useEffect(() => {
     const fetchRecentResults = async () => {
       try {
-        const response = await fetch("http://localhost:8000/recent_results");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        setRecentResults(data.results || []);
+        const results = await getRecentResults();
+        setRecentResults(results);
       } catch (error) {
         console.error("최근 검색 기록을 불러오는 중 오류 발생:", error);
       }
@@ -38,13 +36,7 @@ export const DetailPage = () => {
 
     const fetchAnalysisResultById = async (analysisId: string) => {
       try {
-        const response = await fetch(
-          `http://localhost:8000/analysis_results/${analysisId}`
-        );
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
+        const data = await getAnalysisResult(analysisId);
         setAnalysisData(data);
         if (data.keywords && data.keywords.length > 0) {
         }
@@ -111,34 +103,20 @@ export const DetailPage = () => {
   const handleSearch = async (query: string) => {
     console.log("분석 텍스트:", query);
     try {
-      const response = await fetch("http://localhost:8000/extract_keywords", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          text: query,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
+      const result = await extractKeywords(query);
       console.log("분석 결과:", result);
 
       if (!result.keywords || result.keywords.length === 0) {
         console.warn("키워드가 추출되지 않았습니다.");
         setAnalysisData(result);
         setSelectedKeyword(null);
-        navigate(`/detail/${result.id}`, { state: { analysisResult: result } });
+        navigate(`/detail/${Date.now()}`, { state: { analysisResult: result } });
         return;
       }
 
       setAnalysisData(result);
       setSelectedKeyword(result.keywords[0]);
-      navigate(`/detail/${result.id}`, { state: { analysisResult: result } });
+      navigate(`/detail/${Date.now()}`, { state: { analysisResult: result } });
     } catch (error) {
       console.error("분석 중 오류 발생:", error);
     }
