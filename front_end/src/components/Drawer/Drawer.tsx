@@ -1,21 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import type { RecentResult, DrawerProps } from "../../types";
 import styles from "./Drawer.module.scss";
-
-interface RecentResult {
-  id: number;
-  text: string;
-  created_at: string;
-  nouns: string[];
-  verbs: string[];
-  adjectives: string[];
-  keywords: string[];
-}
-
-interface DrawerProps {
-  isOpen: boolean;
-  onToggle: () => void;
-  recentResults: RecentResult[];
-}
 
 export default function Drawer({
   isOpen,

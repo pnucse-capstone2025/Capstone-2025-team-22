@@ -1,18 +1,5 @@
 import { memo, useMemo } from "react";
-
-interface AttentionResult {
-  [keyword: string]: {
-    nouns: { [key: string]: AttentionItem };
-    verbs: { [key: string]: AttentionItem };
-  };
-}
-
-interface AttentionItem {
-  keyword: string;
-  score: number;
-  start: number;
-  end: number;
-}
+import type { AttentionResult, AttentionItem } from "../../../../types";
 
 interface Props {
   text: string;
