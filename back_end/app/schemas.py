@@ -19,6 +19,21 @@ class POSResult(POSResultCreate):
     class Config:
         from_attributes = True  # Pydantic v2에서 권장
 
+class AttentionResultCreate(BaseModel):
+    user_input_id: int
+    keyword: str
+    attention_type: str
+    attended_word: str
+    score: float
+    start_offset: int
+    end_offset: int
+
+class AttentionResult(AttentionResultCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
+
 class TextInput(BaseModel):
     text: str
 

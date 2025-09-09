@@ -181,6 +181,13 @@ src/ignore
 .DS_Store
 
 src/model_state/best_model.pt
+nlp/best_model.pt
+nlp/data_preprocessing.ipynb
+
+# Node.js dependencies
+node_modules/
+front_end/node_modules/
+package-lock.json
 nlp/data_preprocessing.ipynb
 
 # AI/ML Model files (민감한 학습된 모델 파일들)

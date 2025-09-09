@@ -102,6 +102,25 @@ def get_analysis_results(user_input_id: int, db: Session = Depends(database.get_
     if not user_input_db or not pos_result_db:
         return JSONResponse(content={"detail": "Analysis result not found"}, status_code=404)
 
+    attention_results_db = crud.get_attention_results_by_user_input_id(db, user_input_id)
+    formatted_attention_results = {}
+    for ar in attention_results_db:
+        if ar.keyword not in formatted_attention_results:
+            formatted_attention_results[ar.keyword] = {"nouns": {}, "verbs": {}}
+        
+        item = {
+            'keyword': ar.attended_word,
+            'score': ar.score,
+            'start': ar.start_offset,
+            'end': ar.end_offset
+        }
+        
+        key = f"{ar.attended_word}_{ar.start_offset}_{ar.end_offset}"
+        if ar.attention_type == "noun":
+            formatted_attention_results[ar.keyword]["nouns"][key] = item
+        elif ar.attention_type == "verb":
+            formatted_attention_results[ar.keyword]["verbs"][key] = item
+
     return JSONResponse(content={
         "id": user_input_db.index,
         "text": user_input_db.text,
@@ -113,6 +132,7 @@ def get_analysis_results(user_input_id: int, db: Session = Depends(database.get_
         "noun_count": len(pos_result_db.noun.split(", ") if pos_result_db.noun else []),
         "verb_count": len(pos_result_db.verb.split(", ") if pos_result_db.verb else []),
         "adjective_count": len(pos_result_db.adjective.split(", ") if pos_result_db.adjective else []),
+        "attention_result": formatted_attention_results
     })
 
 @app.post("/extract_keywords")
@@ -122,6 +142,31 @@ def extract_keywords(text: str = Form(...), db: Session = Depends(database.get_d
 
     nouns, verbs, adjectives, attention_analysis_result, keyword = extract_nva(text)
     save_pos_result_to_db(nouns, verbs, adjectives, keyword, db_user_input.index, db)
+
+    # Attention 분석 결과 저장
+    attention_results_to_create = []
+    for kw_str, analysis_data in attention_analysis_result.items():
+        for noun_item in analysis_data['nouns'].values():
+            attention_results_to_create.append(schemas.AttentionResultCreate(
+                user_input_id=db_user_input.index,
+                keyword=kw_str,
+                attention_type="noun",
+                attended_word=noun_item['keyword'],
+                score=noun_item['score'],
+                start_offset=noun_item['start'],
+                end_offset=noun_item['end']
+            ))
+        for verb_item in analysis_data['verbs'].values():
+            attention_results_to_create.append(schemas.AttentionResultCreate(
+                user_input_id=db_user_input.index,
+                keyword=kw_str,
+                attention_type="verb",
+                attended_word=verb_item['keyword'],
+                score=verb_item['score'],
+                start_offset=verb_item['start'],
+                end_offset=verb_item['end']
+            ))
+    crud.create_attention_results(db=db, results=attention_results_to_create)
 
     return JSONResponse(content={
         "text": text,
