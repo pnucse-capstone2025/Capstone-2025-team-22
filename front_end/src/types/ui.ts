@@ -23,4 +23,5 @@ export interface GradationScaleProps {
   maxScores?: { noun: number; verb: number };
   selectedKeyword?: string | null;
   clickedWordScore?: ClickedWordScore | null;
+  attentionResult?: AttentionResult;
 }

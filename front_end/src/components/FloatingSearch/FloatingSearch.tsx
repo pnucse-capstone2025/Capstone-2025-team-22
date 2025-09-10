@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { LuTextSearch } from "react-icons/lu";
-import styles from "./FloatingSearch.module.scss";
+import styles from "@/components/FloatingSearch/FloatingSearch.module.scss";
 
 interface FloatingSearchProps {
   onSearch: (query: string) => void;
@@ -76,4 +76,4 @@ export default function FloatingSearch({ onSearch }: FloatingSearchProps) {
       </button>
     </div>
   );
-} 
+}

@@ -109,14 +109,15 @@
   }
 
   .tickMarks {
-    display: flex;
-    justify-content: space-between;
+    position: relative;
+    height: 20px;
     margin: 4px 96px 8px 96px;
     font-size: 11px;
     color: #6b7280;
 
     .tick {
-      position: relative;
+      position: absolute;
+      transform: translateX(-50%);
 
       &::before {
         content: "";
