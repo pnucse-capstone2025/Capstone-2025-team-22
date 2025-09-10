@@ -39,10 +39,10 @@
 | 7주차 (2025.7.14 ~ 2025.7.20)| 모델 | 모델 평가 | ✅|
 | 8주차 (2025.7.21 ~ 2025.7.27)| 논문 | 키워드 확장 방법론 학습 |✅ |
 | 9주차 (2025.7.28 ~ 2025.8.3)| 논문 | 키워드 확장 방법론 설계 |✅ |
-| 10주차 (2025.8.4 ~ 2025.8.10)| 논문 | 키워드 확장 방법론 구현 | |
-| 11주차 (2025.8.11 ~ 2025.8.17)| 논문 | 키워드 확장 방법론 평가 | |
-| 12주차 (2025.8.18 ~ 2025.8.24)| 모델 | 모델 API화 | |
-| 13주차 (2025.8.25 ~ 2025.9.1)| 모델 | 모델 배포 | |
+| 10주차 (2025.8.4 ~ 2025.8.10)| 논문 | 키워드 확장 방법론 구현 |✅ |
+| 11주차 (2025.8.11 ~ 2025.8.17)| 논문 | 키워드 확장 방법론 평가 |✅ |
+| 12주차 (2025.8.18 ~ 2025.8.24)| 모델 | 모델 API화 |✅ |
+| 13주차 (2025.8.25 ~ 2025.9.1)| 모델 | 모델 배포 |✅ |
 
 
 ## 2. 시스템 구상도
@@ -177,7 +177,7 @@ L_cos = CosineEmbeddingLoss( h_s_proj, h_t, target=1 )
 
 ### 6.5 학습 결과
 
-<img width="600px" alt="distillation results" src="./nlp/distillation_experiment/results/plots/real_distillation_results.png" />
+<img width="600px" alt="distillation results" src="./nlp/experiments/distillation/results/plots/real_distillation_results.png" />
 
 - 5epoch 동안 전반적으로 loss가 줄어드는 추세가 유지되었습니다.
 - 흥미로운 점은 Task Loss 덕분에 원래 모델보다 Accuracy가 향상된 점입니다.
@@ -302,8 +302,7 @@ paper:
 
 2. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805)
 
-3. [A Unified Approach to Interpreting Model Predictions](https://arxiv.org/pdf/1705.07874)
-4. [What does BERT look at? An analysis of BERT's attention](https://arxiv.org/pdf/1906.04341)
+3. [What does BERT look at? An analysis of BERT's attention](https://arxiv.org/pdf/1906.04341)
 
 website:
 1. [neuronpedia](https://www.neuronpedia.org)

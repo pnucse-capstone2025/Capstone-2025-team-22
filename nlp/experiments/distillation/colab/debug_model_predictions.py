@@ -11,8 +11,8 @@ parent_dir = os.path.dirname(current_dir)
 grandparent_dir = os.path.dirname(parent_dir)
 sys.path.insert(0, grandparent_dir)
 
-from data import load_data, KeywordDataset, Collator
-from model import KoKeyBERT
+from ...src.data.dataset import load_data, KeywordDataset, Collator
+from ...src.models.kokeybert import KoKeyBERT
 from real_distillation_gpu import extract_keywords_from_bio_tags, evaluate_keywords, create_real_models
 from torch.utils.data import DataLoader
 
@@ -25,7 +25,7 @@ def debug_model_predictions():
     # 토크나이저 로드
     try:
         sys.path.append('../../kobert_tokenizer')
-        from kobert_tokenizer import KoBERTTokenizer
+        from ....tokenizer.kobert_tokenizer import KoBERTTokenizer
         tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
         print("✅ KoBERT 토크나이저 로드 성공")
     except Exception as e:

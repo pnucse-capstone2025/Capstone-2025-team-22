@@ -188,18 +188,18 @@ def evaluate_keywords(pred_keywords, true_keywords):
 
 
 # test.py와 동일한 import 추가
-from data import load_data, KeywordDataset, Collator
+from ...src.data.dataset import load_data, KeywordDataset, Collator
 
 print("🔄 실제 모델 import 시도 중...")
 try:
-    from model import KoKeyBERT
+    from ...src.models.kokeybert import KoKeyBERT
     print("✅ KoKeyBERT import 성공")
 except ImportError as e:
     print(f"❌ KoKeyBERT import 실패: {e}")
     # 대안 import 시도
     try:
         sys.path.insert(0, os.path.join(grandparent_dir, 'nlp'))
-        from model import KoKeyBERT
+        from ...src.models.kokeybert import KoKeyBERT
         print("✅ KoKeyBERT import 성공 (대안 경로)")
     except ImportError as e2:
         print(f"❌ 대안 경로도 실패: {e2}")
@@ -350,7 +350,7 @@ def create_real_models(device):
         print("✅ KoBERT 기반 Teacher 모델 생성 성공")
         
         # 사전 훈련된 체크포인트 로드
-        checkpoint_path = "../../best_model.pt"
+        checkpoint_path = "../../../models/kokeybert_best.pt"
         if os.path.exists(checkpoint_path):
             print(f"🔄 사전 훈련된 체크포인트 로드 중: {checkpoint_path}")
             teacher_model.load_state_dict(torch.load(checkpoint_path, map_location=device))
@@ -979,7 +979,7 @@ def save_real_results(teacher_model, student_model, training_history, eval_resul
     print("💾 실제 실험 결과 저장 중...")
     
     # 모델 저장
-    os.makedirs('../results/models', exist_ok=True)
+    os.makedirs('../../../results/json', exist_ok=True)
     
     # Student 모델만 저장 (Teacher는 원본이므로)
     torch.save({
@@ -988,11 +988,11 @@ def save_real_results(teacher_model, student_model, training_history, eval_resul
         'training_history': training_history,
         'eval_results': eval_results,
         'best_val_acc': best_val_acc
-    }, '../results/models/real_distilled_koKeyBERT.pt')
+    }, '../../../models/real_distilled_kokeybert.pt')
     print("✅ Student 모델 저장 완료")
     
     # 결과 시각화
-    os.makedirs('../results/plots', exist_ok=True)
+    os.makedirs('../../../results/plots', exist_ok=True)
     
     plt.figure(figsize=(15, 5))
     
@@ -1049,7 +1049,7 @@ def save_real_results(teacher_model, student_model, training_history, eval_resul
              ha='center', fontweight='bold', color='blue')
     
     plt.tight_layout()
-    plt.savefig('../results/plots/real_distillation_results.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../../../results/plots/real_distillation_results.png', dpi=300, bbox_inches='tight')
     print("✅ 결과 시각화 저장 완료")
     
     # 요약 출력
@@ -1105,15 +1105,16 @@ def main():
         print("📊 test.py 방식으로 데이터 로딩 중...")
         
         # 훈련 데이터 경로
-        train_data_path = "../../src/data/train_clean.json"
-        test_data_path = "../../src/data/test_clean.json"
+        train_data_path = "../../../../../src/data/train_clean.json"
+        test_data_path = "../../../../../src/data/test_clean.json"
         
         # 경로 확인 및 대안 경로 시도
         def find_data_file(filename):
             possible_paths = [
-                f"../../src/data/{filename}",
+                f"../../../../../src/data/{filename}",
+                f"../../../../src/data/{filename}",
                 f"../../../src/data/{filename}",
-                f"../../data/{filename}",
+                f"../../src/data/{filename}",
                 f"../data/{filename}",
                 f"./{filename}"
             ]
@@ -1152,7 +1153,7 @@ def main():
             # kobert_tokenizer 폴더에서 KoBERTTokenizer 가져오기
             import sys
             sys.path.append('../../kobert_tokenizer')
-            from kobert_tokenizer import KoBERTTokenizer
+            from ....tokenizer.kobert_tokenizer import KoBERTTokenizer
             tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
             print("✅ KoBERT (KoBERTTokenizer) 로드 성공")
         except Exception as e:
@@ -1190,8 +1191,8 @@ def main():
         
         print("\n🎉 실제 Knowledge Distillation 실험 완료!")
         print("📁 결과 파일:")
-        print("  - ../results/models/distilled_koKeyBERT.pt")
-        print("  - ../results/plots/distillation_results.png")
+        print("  - ../../../models/real_distilled_kokeybert.pt")
+        print("  - ../../../results/plots/real_distillation_results.png")
         
     except Exception as e:
         print(f"❌ 실험 중 오류 발생: {e}")

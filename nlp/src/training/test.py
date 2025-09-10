@@ -1,10 +1,10 @@
-from data import KeywordDataset, Collator, load_data
-from model import KoKeyBERT
-from kobert_tokenizer import KoBERTTokenizer
+from ..data.dataset import KeywordDataset, Collator, load_data
+from ..models.kokeybert import KoKeyBERT
+from ..tokenizer.kobert_tokenizer import KoBERTTokenizer
 from transformers import BertConfig
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 import numpy as np
-from distillation_experiment.distill_model import DistillKoKeyBERT
+from ..experiments.distillation.distill_model import DistillKoKeyBERT
 
 
 import argparse
@@ -291,10 +291,10 @@ def test(model: KoKeyBERT,
                     'true': all_true_keywords[i] if i < len(all_true_keywords) else []
                 })
             
-            with open(os.path.join('./results', f'test_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
+            with open(os.path.join('./results/json', f'test_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
                 json.dump(results, f, ensure_ascii=False, indent=2)
             
-            logger.info(f"상세 결과가 './results/test_results_{args.test_logger_name}.json'에 저장되었습니다.")
+            logger.info(f"상세 결과가 './results/json/test_results_{args.test_logger_name}.json'에 저장되었습니다.")
         except Exception as e:
             logger.warning(f"결과 저장 중 오류 발생: {e}")
     
@@ -453,10 +453,10 @@ def test_with_keybert(test_dataset, args, logger, device=None):
                         'true': all_true_keywords[i] if i < len(all_true_keywords) else []
                     })
                 
-                with open(os.path.join('./results', f'keybert_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
+                with open(os.path.join('./results/json', f'keybert_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
                     json.dump(results, f, ensure_ascii=False, indent=2)
                 
-                logger.info(f"상세 결과가 './results/keybert_results_{args.test_logger_name}.json'에 저장되었습니다.")
+                logger.info(f"상세 결과가 './results/json/keybert_results_{args.test_logger_name}.json'에 저장되었습니다.")
             except Exception as e:
                 logger.warning(f"결과 저장 중 오류 발생: {e}")
         
@@ -484,7 +484,7 @@ def test_with_distill_kokeybert(test_dataset, args, logger, device=None):
         return 0.0, 0.0, 0.0, 0.0, 0.0
     
     try:
-        from kobert_tokenizer import KoBERTTokenizer
+        from ...tokenizer.kobert_tokenizer import KoBERTTokenizer
     except ImportError:
         logger.error("KoBERTTokenizer를 import할 수 없습니다.")
         return 0.0, 0.0, 0.0, 0.0, 0.0
@@ -724,10 +724,10 @@ def test_with_distill_kokeybert(test_dataset, args, logger, device=None):
                         'true': all_true_keywords[i] if i < len(all_true_keywords) else []
                     })
                 
-                with open(os.path.join('./results', f'distill_kokeybert_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
+                with open(os.path.join('./results/json', f'distill_kokeybert_results_{args.test_logger_name}.json'), 'w', encoding='utf-8') as f:
                     json.dump(results, f, ensure_ascii=False, indent=2)
                 
-                logger.info(f"상세 결과가 './results/distill_kokeybert_results_{args.test_logger_name}.json'에 저장되었습니다.")
+                logger.info(f"상세 결과가 './results/json/distill_kokeybert_results_{args.test_logger_name}.json'에 저장되었습니다.")
             except Exception as e:
                 logger.warning(f"결과 저장 중 오류 발생: {e}")
         
@@ -741,13 +741,13 @@ def test_with_distill_kokeybert(test_dataset, args, logger, device=None):
 
 def main():
     parser = argparse.ArgumentParser(description='KoKeyBERT Testing')
-    parser.add_argument("--test_data_path", type=str, default="../src/data/test_clean.json")
+    parser.add_argument("--test_data_path", type=str, default="../../../src/data/test_clean.json")
     parser.add_argument("--model_name", type=str, default="skt/kobert-base-v1")
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="cuda for gpu, cpu for cpu")
     parser.add_argument("--test_logger_name", type=str, default="test")
     parser.add_argument("--num_workers", type=int, default=8, help="A100: 12, 8 recommanded")
-    parser.add_argument("--checkpoint_path", type=str, default="best_model.pt", help="Path to checkpoint to load model from")
+    parser.add_argument("--checkpoint_path", type=str, default="../../models/best_model.pt", help="Path to checkpoint to load model from")
     parser.add_argument("--log_freq", type=int, default=5, help="로깅 빈도 (몇 배치마다 로그를 출력할지)")
     parser.add_argument("--save_results", action="store_true", help="테스트 결과를 JSON 파일로 저장")
     parser.add_argument("--use_keybert", action="store_true", help="KeyBERT 라이브러리를 사용하여 테스트")

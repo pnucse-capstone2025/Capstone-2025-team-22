@@ -5,7 +5,7 @@ from TorchCRF import CRF
 from typing import Optional
 from torch.nn.utils.rnn import pad_sequence
 #from app.nlp.utils.extract import extract_keywords_from_bio_tags
-from utils.extract import extract_keywords_from_bio_tags
+from ..utils.extract import extract_keywords_from_bio_tags
 
 class KoKeyBERT(nn.Module):
     """ Korean KeyBERT Model """
@@ -106,7 +106,7 @@ class KoKeyBERT(nn.Module):
     
 if __name__ == '__main__':
     from transformers import BertConfig
-    from kobert_tokenizer import KoBERTTokenizer
+    from ..tokenizer.kobert_tokenizer import KoBERTTokenizer
 
     # Model Loading Part
 
