@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import styles from "./Detail.module.scss";
+import styles from "@/pages/Detail/Detail.module.scss";
 import WordCloudPage from "@/pages/Detail/Sections/WordcloudSection/WordcloudSection";
 import FloatingSearch from "@/components/FloatingSearch/FloatingSearch";
 import Drawer from "@/components/Drawer/Drawer";
@@ -110,7 +110,9 @@ export const DetailPage = () => {
         console.warn("키워드가 추출되지 않았습니다.");
         setAnalysisData(result);
         setSelectedKeyword(null);
-        navigate(`/detail/${Date.now()}`, { state: { analysisResult: result } });
+        navigate(`/detail/${Date.now()}`, {
+          state: { analysisResult: result },
+        });
         return;
       }
 

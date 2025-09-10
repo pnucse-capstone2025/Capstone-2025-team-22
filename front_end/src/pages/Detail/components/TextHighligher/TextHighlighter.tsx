@@ -1,9 +1,9 @@
 import { memo, useMemo } from "react";
-import type { AttentionResult, AttentionItem } from "../../../../types";
+import type { AttentionResult, AttentionItem } from "@/types";
 import {
   calculateNormalizedMaxScores,
   getNormalizedHighlightColor,
-} from "../../../../utils/gradationScaleUtils";
+} from "@/utils/gradationScaleUtils";
 
 interface Props {
   text: string;
@@ -18,7 +18,6 @@ const TextHighlighter: React.FC<Props> = ({
   attentionResult,
   onWordClick,
 }) => {
-  // 품사별 최대 점수 계산 (정규화를 위한)
   const normalizedMaxScores = useMemo(
     () => calculateNormalizedMaxScores(attentionResult, hoveredKeyword),
     [attentionResult, hoveredKeyword]
@@ -62,7 +61,11 @@ const TextHighlighter: React.FC<Props> = ({
       }
 
       // 정규화된 점수로 투명도 계산
-      const backgroundColor = getNormalizedHighlightColor(score, type, normalizedMaxScores);
+      const backgroundColor = getNormalizedHighlightColor(
+        score,
+        type,
+        normalizedMaxScores
+      );
 
       parts.push(
         <span
