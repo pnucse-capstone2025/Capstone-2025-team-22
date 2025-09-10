@@ -1,11 +1,14 @@
 import { useMemo } from "react";
-import styles from "./GradationScale.module.scss";
+import styles from "@/pages/Detail/components/GradationScale/GradationScale.module.scss";
+import {
+  calculateNormalizedMaxScores,
+  generateTicks,
+  getMarkerPosition,
+  getNormalizedHighlightColor,
+  generateScaleGradient,
+} from "@/utils/gradationScaleUtils";
 
-import type {
-  GradationScaleProps,
-  AttentionResult,
-  AttentionItem,
-} from "../../../../types";
+import type { GradationScaleProps } from "@/types";
 
 const GradationScale: React.FC<GradationScaleProps> = ({
   maxScores = { noun: 1.0, verb: 1.0 },
@@ -13,89 +16,20 @@ const GradationScale: React.FC<GradationScaleProps> = ({
   clickedWordScore,
   attentionResult,
 }) => {
-  const normalizedMaxScores = useMemo(() => {
-    if (
-      !attentionResult ||
-      !selectedKeyword ||
-      !attentionResult[selectedKeyword]
-    ) {
-      return { noun: 1.0, verb: 1.0 };
-    }
+  const normalizedMaxScores = useMemo(
+    () =>
+      calculateNormalizedMaxScores(attentionResult, selectedKeyword || null),
+    [attentionResult, selectedKeyword]
+  );
 
-    const keywordData = attentionResult[selectedKeyword];
-
-    // 명사와 동사의 최대 점수 찾기
-    const nounScores = Object.values(keywordData.nouns || {}).map(
-      (item: AttentionItem) => item.score
-    );
-    const verbScores = Object.values(keywordData.verbs || {}).map(
-      (item: AttentionItem) => item.score
-    );
-
-    const maxNounScore = nounScores.length > 0 ? Math.max(...nounScores) : 1.0;
-    const maxVerbScore = verbScores.length > 0 ? Math.max(...verbScores) : 1.0;
-
-    return {
-      noun: maxNounScore,
-      verb: maxVerbScore,
-    };
-  }, [attentionResult, selectedKeyword]);
-
-  const nounTicks = useMemo(() => {
-    const tickCount = 6;
-    const ticks = [];
-    for (let i = 0; i < tickCount; i++) {
-      const value = (maxScores.noun / tickCount) * i;
-      ticks.push(value.toFixed(1));
-    }
-    return ticks;
-  }, [maxScores.noun]);
-
-  const verbTicks = useMemo(() => {
-    const tickCount = 6;
-    const ticks = [];
-    for (let i = 0; i < tickCount; i++) {
-      const value = (maxScores.verb / tickCount) * i;
-      ticks.push(value.toFixed(1));
-    }
-    return ticks;
-  }, [maxScores.verb]);
-
-  const getMarkerPosition = (score: number, maxScore: number) => {
-    const position = (score / maxScore) * 100;
-    return Math.max(0, Math.min(100, position));
-  };
-
-  const getNormalizedHighlightColor = (
-    score: number,
-    type: "noun" | "verb"
-  ) => {
-    const maxScore =
-      type === "noun" ? normalizedMaxScores.noun : normalizedMaxScores.verb;
-    const normalizedScore = score / maxScore;
-    const opacity = normalizedScore * 0.8;
-
-    return type === "noun"
-      ? `rgba(220, 53, 69, ${opacity})`
-      : `rgba(30, 144, 255, ${opacity})`;
-  };
-
-  const generateScaleGradient = (maxScore: number, type: "noun" | "verb") => {
-    const baseColor = type === "noun" ? "220, 53, 69" : "30, 144, 255";
-    const normalizedMaxScore =
-      type === "noun" ? normalizedMaxScores.noun : normalizedMaxScores.verb;
-    const steps = [];
-
-    for (let i = 0; i <= 4; i++) {
-      const ratio = i / 4;
-      const score = maxScore * ratio;
-      const normalizedScore = score / normalizedMaxScore;
-      const opacity = Math.min(normalizedScore, 1) * 0.8;
-      steps.push(`rgba(${baseColor}, ${opacity}) ${ratio * 100}%`);
-    }
-
-    return `linear-gradient(to right, ${steps.join(", ")})`;
-  };
+  const nounTicks = useMemo(
+    () => generateTicks(maxScores.noun),
+    [maxScores.noun]
+  );
+  const verbTicks = useMemo(
+    () => generateTicks(maxScores.verb),
+    [maxScores.verb]
+  );
 
   return (
     <div className={styles.gradationScale}>
@@ -116,7 +50,11 @@ const GradationScale: React.FC<GradationScaleProps> = ({
             <div
               className={styles.scaleBar}
               style={{
-                background: generateScaleGradient(maxScores.noun, "noun"),
+                background: generateScaleGradient(
+                  maxScores.noun,
+                  "noun",
+                  normalizedMaxScores
+                ),
               }}
             >
               {clickedWordScore?.type === "noun" && (
@@ -129,7 +67,8 @@ const GradationScale: React.FC<GradationScaleProps> = ({
                     )}%`,
                     backgroundColor: getNormalizedHighlightColor(
                       clickedWordScore.score,
-                      "noun"
+                      "noun",
+                      normalizedMaxScores
                     ),
                     border: "2px solid #ffffff",
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
@@ -163,7 +102,11 @@ const GradationScale: React.FC<GradationScaleProps> = ({
             <div
               className={styles.scaleBar}
               style={{
-                background: generateScaleGradient(maxScores.verb, "verb"),
+                background: generateScaleGradient(
+                  maxScores.verb,
+                  "verb",
+                  normalizedMaxScores
+                ),
               }}
             >
               {clickedWordScore?.type === "verb" && (
@@ -176,7 +119,8 @@ const GradationScale: React.FC<GradationScaleProps> = ({
                     )}%`,
                     backgroundColor: getNormalizedHighlightColor(
                       clickedWordScore.score,
-                      "verb"
+                      "verb",
+                      normalizedMaxScores
                     ),
                     border: "2px solid #ffffff",
                     boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
