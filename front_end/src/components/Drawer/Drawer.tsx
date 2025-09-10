@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import type { RecentResult, DrawerProps } from "../../types";
+import type { DrawerProps } from "@/types";
 import styles from "./Drawer.module.scss";
 
 export default function Drawer({

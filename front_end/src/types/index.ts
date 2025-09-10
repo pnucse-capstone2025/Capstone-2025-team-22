@@ -23,3 +23,9 @@ export type {
   ApiResponse,
   ApiError,
 } from "@/types/common";
+
+export type {
+  WordCloudItem,
+  WordCloudSectionProps,
+  WordCloudPageProps,
+} from "@/types/wordcloud";
