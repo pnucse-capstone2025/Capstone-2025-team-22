@@ -14,6 +14,27 @@ const TextHighlighter: React.FC<Props> = ({
   attentionResult,
   onWordClick,
 }) => {
+  // 품사별 최대 점수 계산 (정규화를 위한)
+  const normalizedMaxScores = useMemo(() => {
+    if (!attentionResult || !hoveredKeyword || !attentionResult[hoveredKeyword]) {
+      return { noun: 1.0, verb: 1.0 };
+    }
+
+    const keywordData = attentionResult[hoveredKeyword];
+    
+    // 명사와 동사의 최대 점수 찾기
+    const nounScores = Object.values(keywordData.nouns || {}).map((item: AttentionItem) => item.score);
+    const verbScores = Object.values(keywordData.verbs || {}).map((item: AttentionItem) => item.score);
+    
+    const maxNounScore = nounScores.length > 0 ? Math.max(...nounScores) : 1.0;
+    const maxVerbScore = verbScores.length > 0 ? Math.max(...verbScores) : 1.0;
+    
+    return {
+      noun: maxNounScore,
+      verb: maxVerbScore
+    };
+  }, [attentionResult, hoveredKeyword]);
+
   const highlightedText = useMemo(() => {
     if (
       !hoveredKeyword ||
@@ -51,7 +72,10 @@ const TextHighlighter: React.FC<Props> = ({
         );
       }
 
-      const opacity = Math.min(score, 1) * 0.8;
+      // 정규화된 점수로 투명도 계산
+      const maxScore = type === "noun" ? normalizedMaxScores.noun : normalizedMaxScores.verb;
+      const normalizedScore = score / maxScore; // 0~1 사이 값으로 정규화
+      const opacity = normalizedScore * 0.8; // 최대 80% 투명도
 
       const backgroundColor =
         type === "noun"
@@ -81,7 +105,7 @@ const TextHighlighter: React.FC<Props> = ({
     }
 
     return parts;
-  }, [text, hoveredKeyword, attentionResult, onWordClick]);
+  }, [text, hoveredKeyword, attentionResult, onWordClick, normalizedMaxScores]);
 
   return <>{highlightedText}</>;
 };

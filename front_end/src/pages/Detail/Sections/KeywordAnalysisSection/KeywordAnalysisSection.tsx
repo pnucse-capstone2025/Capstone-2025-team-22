@@ -82,6 +82,7 @@ const KeywordAnalysisSection: React.FC<KeywordAnalysisSectionProps> = ({
           maxScores={maxScores}
           selectedKeyword={selectedKeyword}
           clickedWordScore={clickedWordScore}
+          attentionResult={analysisData?.attention_result}
         />
       </div>
     </div>
