@@ -14,8 +14,8 @@ grandparent_dir = os.path.dirname(parent_dir)
 sys.path.insert(0, grandparent_dir)
 
 # test.py에서 import
-from data import load_data, KeywordDataset, Collator
-from model import KoKeyBERT
+from ...src.data.dataset import load_data, KeywordDataset, Collator
+from ...src.models.kokeybert import KoKeyBERT
 from test import test, extract_keywords_from_bio_tags, evaluate_keywords
 from transformers import BertConfig
 
@@ -77,7 +77,7 @@ def test_kokeybert_performance():
         print("🔤 토크나이저 로딩 중...")
         try:
             sys.path.append('../../kobert_tokenizer')
-            from kobert_tokenizer import KoBERTTokenizer
+            from ....tokenizer.kobert_tokenizer import KoBERTTokenizer
             tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
             collator = Collator(tokenizer)
             print("✅ KoBERT 토크나이저 로드 성공")

@@ -270,3 +270,6 @@ results/
 !nlp/results/plots/precision_comparison_by_progress.png
 !nlp/results/plots/recall_comparison_by_progress.png
 !nlp/results/plots/f1_comparison_by_progress.png
+
+# NLP 모델 파일들 (용량이 큰 학습된 모델들)
+nlp/models/*.pt

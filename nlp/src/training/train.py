@@ -1,6 +1,6 @@
-from data import KeywordDataset, Collator, load_data
-from model import KoKeyBERT
-from kobert_tokenizer import KoBERTTokenizer
+from ..data.dataset import KeywordDataset, Collator, load_data
+from ..models.kokeybert import KoKeyBERT
+from ..tokenizer.kobert_tokenizer import KoBERTTokenizer
 from transformers import BertConfig
 
 import argparse
@@ -40,7 +40,7 @@ def train(model: KoKeyBERT,
     stream_handler.setLevel(logging.INFO)
 
     # file handler
-    file_handler = logging.FileHandler("./log/" + args.train_logger_name + ".log")
+    file_handler = logging.FileHandler("../../logs/" + args.train_logger_name + ".log")
     file_handler.setLevel(logging.DEBUG)
 
     # format
@@ -102,12 +102,12 @@ def train(model: KoKeyBERT,
                     logger.info("Best val loss: %f, Best val acc: %f", best_val_loss, best_val_acc)
                     # save model
                     os.makedirs("./checkpoints", exist_ok=True)
-                    logger.info("Saving best model to ./checkpoints/best_model.pt")
-                    torch.save(model.state_dict(), os.path.join("./checkpoints", "best_model.pt"))
+                    logger.info("Saving best model to ../../models/best_model.pt")
+                    torch.save(model.state_dict(), os.path.join("../../models", "best_model.pt"))
             
             if args.save_freq is not None and step % args.save_freq == 0:
                 # save current training state in one file
-                logger.info("Saving current training state to ./checkpoints/step_" + str(step) + "_state.pt")
+                logger.info("Saving current training state to ../../models/step_" + str(step) + "_state.pt")
                 torch.save({
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
@@ -116,7 +116,7 @@ def train(model: KoKeyBERT,
                     "step": step,
                     "best_val_loss": best_val_loss,
                     "best_val_acc": best_val_acc,
-                }, os.path.join("./checkpoints", "step_" + str(step) + "_state.pt"))
+                }, os.path.join("../../models", "step_" + str(step) + "_state.pt"))
 
 def evaluate(model: KoKeyBERT,
              val_dataset: KeywordDataset,
@@ -169,7 +169,7 @@ def evaluate(model: KoKeyBERT,
     
 def main():
     args = argparse.ArgumentParser(description='KoKeyBERT Training')
-    args.add_argument("--train_data_path", type=str, default="./src/data/train_clean.json")
+    args.add_argument("--train_data_path", type=str, default="../../../src/data/train_clean.json")
     args.add_argument("--model_name", type=str, default="skt/kobert-base-v1")
     args.add_argument("--num_epochs", type=int, default=12)
     args.add_argument("--batch_size", type=int, default=8)

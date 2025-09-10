@@ -8,9 +8,9 @@ import torch, json
 from app import models, schemas, crud, database
 from app.text_analysis import extract_nouns_verbs_adjectives, analyze_keyword_attention
 from app.database import Base, engine
-from app.nlp.distillation_experiment.distill_model import DistillKoKeyBERT
-from app.nlp.kobert_tokenizer.kobert_tokenizer import KoBERTTokenizer
-from app.nlp.utils.extract import extract_keywords_from_bio_tags
+from app.nlp.experiments.distillation.distill_model import DistillKoKeyBERT
+from app.nlp.tokenizer.kobert_tokenizer import KoBERTTokenizer
+from app.nlp.src.utils.extract import extract_keywords_from_bio_tags
 from transformers import BertConfig
 
 app = FastAPI()
@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # 모델 초기화
-checkpoint = torch.load('app/nlp/distill_KoKeyBERT.pt', map_location=torch.device('cpu'), weights_only=False)
+checkpoint = torch.load('app/nlp/models/kokeybert_distilled.pt', map_location=torch.device('cpu'), weights_only=False)
 config = checkpoint['model_config']
 model = DistillKoKeyBERT(config=config)
 model.load_state_dict(checkpoint['model_state_dict'])

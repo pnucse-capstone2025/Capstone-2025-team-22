@@ -293,7 +293,7 @@ if __name__ == '__main__':
     import sys
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
     from transformers import BertConfig
-    from kobert_tokenizer import KoBERTTokenizer 
+    from ...tokenizer.kobert_tokenizer import KoBERTTokenizer 
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(os.path.dirname(__file__)))))
     from back_end.app.text_analysis import analyze_keyword_attention
     import pprint
