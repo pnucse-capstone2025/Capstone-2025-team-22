@@ -9,6 +9,14 @@ import type { AnalysisResult, RecentResult } from "@/types";
 import { getRecentResults } from "@/api/services/results";
 import { getAnalysisResult, extractKeywords } from "@/api/services/analysis";
 
+const convertKeywordToString = (keyword: any): string => {
+  if (typeof keyword === "string") return keyword;
+  if (typeof keyword === "object" && keyword && "keyword" in keyword) {
+    return keyword.keyword;
+  }
+  return String(keyword);
+};
+
 export const DetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -39,6 +47,42 @@ export const DetailPage = () => {
         const data = await getAnalysisResult(analysisId);
         setAnalysisData(data);
         if (data.keywords && data.keywords.length > 0) {
+          const firstKeyword = data.keywords[0];
+          const keywordString = convertKeywordToString(firstKeyword);
+          setSelectedKeyword(keywordString);
+
+          setTimeout(() => {
+            if (data.attention_result && data.attention_result[keywordString]) {
+              const keywordData = data.attention_result[keywordString];
+              const allWords: Array<{
+                score: number;
+                type: "noun" | "verb";
+                start: number;
+              }> = [];
+
+              Object.values(keywordData.nouns || {}).forEach((item: any) => {
+                allWords.push({
+                  score: item.score,
+                  type: "noun",
+                  start: item.start,
+                });
+              });
+              Object.values(keywordData.verbs || {}).forEach((item: any) => {
+                allWords.push({
+                  score: item.score,
+                  type: "verb",
+                  start: item.start,
+                });
+              });
+
+              allWords.sort((a, b) => a.start - b.start);
+
+              if (allWords.length > 0) {
+                const firstWord = allWords[0];
+                handleWordClick(firstWord.score, firstWord.type);
+              }
+            }
+          }, 100);
         }
       } catch (error) {
         console.error(
@@ -56,11 +100,12 @@ export const DetailPage = () => {
       const data = location.state.analysisResult;
       if (data.keywords && data.keywords.length > 0) {
         const firstKeyword = data.keywords[0];
-        setSelectedKeyword(firstKeyword);
+        const keywordString = convertKeywordToString(firstKeyword);
+        setSelectedKeyword(keywordString);
 
         setTimeout(() => {
-          if (data.attention_result && data.attention_result[firstKeyword]) {
-            const keywordData = data.attention_result[firstKeyword];
+          if (data.attention_result && data.attention_result[keywordString]) {
+            const keywordData = data.attention_result[keywordString];
             const allWords: Array<{
               score: number;
               type: "noun" | "verb";
@@ -117,7 +162,9 @@ export const DetailPage = () => {
       }
 
       setAnalysisData(result);
-      setSelectedKeyword(result.keywords[0]);
+      const firstKeyword = result.keywords[0];
+      const keywordString = convertKeywordToString(firstKeyword);
+      setSelectedKeyword(keywordString);
       navigate(`/detail/${Date.now()}`, { state: { analysisResult: result } });
     } catch (error) {
       console.error("분석 중 오류 발생:", error);
