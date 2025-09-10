@@ -50,11 +50,7 @@ const GradationScale: React.FC<GradationScaleProps> = ({
             <div
               className={styles.scaleBar}
               style={{
-                background: generateScaleGradient(
-                  maxScores.noun,
-                  "noun",
-                  normalizedMaxScores
-                ),
+                background: generateScaleGradient("noun"),
               }}
             >
               {clickedWordScore?.type === "noun" && (
@@ -102,11 +98,7 @@ const GradationScale: React.FC<GradationScaleProps> = ({
             <div
               className={styles.scaleBar}
               style={{
-                background: generateScaleGradient(
-                  maxScores.verb,
-                  "verb",
-                  normalizedMaxScores
-                ),
+                background: generateScaleGradient("verb"),
               }}
             >
               {clickedWordScore?.type === "verb" && (

@@ -59,21 +59,13 @@ export const getNormalizedHighlightColor = (
     : `rgba(30, 144, 255, ${opacity})`;
 };
 
-export const generateScaleGradient = (
-  maxScore: number,
-  type: "noun" | "verb",
-  normalizedMaxScores: { noun: number; verb: number }
-) => {
+export const generateScaleGradient = (type: "noun" | "verb") => {
   const baseColor = type === "noun" ? "220, 53, 69" : "30, 144, 255";
-  const normalizedMaxScore =
-    type === "noun" ? normalizedMaxScores.noun : normalizedMaxScores.verb;
   const steps = [];
 
   for (let i = 0; i <= 4; i++) {
     const ratio = i / 4;
-    const score = maxScore * ratio;
-    const normalizedScore = score / normalizedMaxScore;
-    const opacity = Math.min(normalizedScore, 1) * 0.8;
+    const opacity = ratio * 0.8;
     steps.push(`rgba(${baseColor}, ${opacity}) ${ratio * 100}%`);
   }
 
