@@ -57,6 +57,11 @@ transformers 4.49.0
 torchcrf 1.1.0 (deprecated)
 
 BackEnd
+fastapi 0.115.0 ~ 0.116.0
+pydantic 2.11.0 ~ 2.12.0
+sqlalchemy 2.0.0 ~ 2.1.0
+python-mecab-ko 1.3.7
+python-mecab-ko-dic 2.1.1.post2
 
 FrontEnd
 ```
