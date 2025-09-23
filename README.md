@@ -445,9 +445,6 @@ docker-compose up --build
   - NLP 모델과 웹 서비스 간 연동 구현
 - **기술 스택**: FastAPI, PostgreSQL, Docker, SQLAlchemy
 
-### 7.2. 팀원 별 참여 후기
-> (요청에 따라 생략)
-
 ## 8. 참고 문헌 및 출처
 
 ### Software
