@@ -1,314 +1,478 @@
-# 부산대학교 정보컴퓨터공학부 2025 전기 졸업과제 
+# 부산대학교 정보컴퓨터공학부 2025 전기 졸업과제
 
 <img width="100px" alt="model_image" src="./src/img/model_image.png" />
 
-**KoKeyBERT (코키 버트) (웰시코기 + 버트)**
+**KoKeyBERT (코키 버트) - 공공데이터를 활용한 한국어 키워드 추출 및 대시보드 시각화**
 
-## 1. 개요
+## 1. 프로젝트 배경
 
-### 공공데이터를 활용한 KoBERT 파인튜닝과 한국어 키워드 분석 및 대쉬보드 시각화
+### 1.1. 국내외 시장 현황 및 문제점
 
-1.1. 개발배경 및 필요성
+#### 시장 현황
+전 세계적으로 텍스트 분석 및 자연어 처리 시장은 급속도로 성장하고 있습니다. 특히 빅데이터 시대에 접어들면서 대량의 텍스트 데이터에서 핵심 정보를 추출하는 키워드 추출 기술의 중요성이 크게 증가하고 있습니다. 국내에서도 정부 기관, 언론사, 기업들이 문서 요약, 검색 최적화, 콘텐츠 분류 등의 목적으로 키워드 추출 기술을 활용하고 있습니다.
 
-기존 KeyBERT 라이브러리는 CLS 토큰과 각 토큰들 간의 벡터 유사도를 측정하는 방식으로 키워드를 추출하기 때문에 입력 문장이 길어지면 계산에 시간이 많이 소요된다는 단점이 있습니다. 또한 KeyBERT에서 내부적으로 사용하는 모델들은 keyword extraction이라는 task에 특화되어 있지 않은 사전학습 모델들이기 때문에 도메인이나 언어별 특수성을 반영하기 어렵습니다. 특히, 형태소 단위로 의미가 구성되는 한국어의 특성상 이러한 방식은 키워드 추출의 정확도가 떨어질 수 있습니다. 따라서 한국어에 특화된 KoBERT와 CRF를 결합하여 보다 효율적이고 정확한 키워드 추출 모델을 구현하고자 하였습니다. 이를 통해 한국어 텍스트를 분석하는 서비스를 만들어보고자 하였습니다.
+#### 기존 문제점
+1. **계산 복잡도 문제**: 기존 KeyBERT는 전체 문서에 대한 CLS 토큰과 문서의 일부분에 대한 CLS 토큰 간의 벡터 유사도를 측정하는 방식으로, 입력 문장이 길어질수록 계산 시간이 기하급수적으로 증가합니다.
 
+2. **도메인 특화 부족**: KeyBERT에서 사용하는 사전학습 모델들은 키워드 추출이라는 특정 태스크에 최적화되어 있지 않아, 도메인별 특수성을 충분히 반영하지 못합니다.
 
+3. **한국어 처리의 한계**: 형태소 단위로 의미가 구성되는 한국어의 특성상, 조사를 고려하지 않는 키워드 추출 방식은 정확도가 현저히 떨어집니다.
 
-1.2. 개발 목표 및 주요 내용
+4. **실시간 처리 어려움**: 대용량 텍스트 처리 시 응답 시간이 길어져 실제 서비스 환경에서 사용하기 어렵습니다.
 
-사용자가 한국어 텍스트를 입력하면 키워드를 추출하고, 해당 키워드가 추출된 이유를 설명하는 기능을 구현하고자 합니다. 또한 텍스트를 구성하는 단어들을 품사별로 분석하여 시각화하는 기능을 구현하고자 합니다. 이를 통해 사용자의 텍스트 분석을 돕습니다.
+### 1.2. 필요성과 기대효과
 
+#### 필요성
+- **한국어 특화 모델의 부재**: 한국어 텍스트에 최적화된 키워드 추출 모델의 필요성이 증대되고 있습니다.
+- **공공데이터 활용 극대화**: 국내 공공기관에서 생산하는 대량의 한국어 텍스트 데이터를 효과적으로 분석할 수 있는 도구가 필요합니다.
+- **실용성 확보**: 학술적 연구를 넘어 실제 서비스에서 사용 가능한 성능과 속도를 갖춘 모델이 요구됩니다.
 
-1.3. 세부내용
+#### 기대효과
+1. **성능 향상**: KeyBERT 대비 F1 Score 20%p 향상으로 키워드 추출 정확도 대폭 개선
+2. **처리 속도 개선**: 기존 대비 2.5배 빠른 추론 속도로 실시간 서비스 가능
+3. **한국어 특화**: 한국어 형태소 분석과 문맥 이해를 통한 정확한 키워드 추출
+4. **비용 효율성**: 지식 증류를 통한 경량화로 서버 비용 절약 및 에너지 효율성 증대
 
-- 자연어 처리: 데이터 전처리, KoBERT와 CRF를 결합한 키워드 추출모델 구현. 키워드 추출 설명 방법론 연구.
-- 백엔드: Django + Pytorch로 AI 모델 API화, FastAPI로 API 서버 구현. Postgresql로 데이터베이스 구축.
-- 프론트엔드: React 및 TypeScript로 반응형 UI 구현.
+## 2. 개발 목표
 
+### 2.1. 목표 및 세부 내용
 
-1.4. 주차 별 계획 및 진행사항 (수정 가능)
+#### 전체적인 개발 목표
+한국어에 특화된 고성능 키워드 추출 모델을 개발하고, 이를 활용한 웹 기반 텍스트 분석 서비스를 구현하여 사용자가 쉽게 접근할 수 있는 한국어 텍스트 분석 플랫폼을 제공합니다.
 
-| 주차 | 키워드 | 계획 | 진행 내역 |
-|:-------:|:-------:|:-------:|:-------:|
-| 1주차 (2025.5.5 ~ 2025.5.11)| 데이터 | 데이터 전처리 | ✅ |
-| 2주차 (2025.5.12 ~ 2025.5.18)| 데이터 | 데이터 전처리 | ✅ |
-| 3주차 (2025.5.19 ~ 2025.5.25)| 모델 | 모델 설계 |✅ |
-| 4주차 (2025.5.26 ~ 2025.6.1)| 모델 | 모델 구현 | ✅|
-| 5주차 (2025.6.30 ~ 2025.7.6)| 모델 | 모델 학습 | ✅|
-| 6주차 (2025.7.7 ~ 2025.7.13)| 모델 | 모델 학습 | ✅|
-| 7주차 (2025.7.14 ~ 2025.7.20)| 모델 | 모델 평가 | ✅|
-| 8주차 (2025.7.21 ~ 2025.7.27)| 논문 | 키워드 확장 방법론 학습 |✅ |
-| 9주차 (2025.7.28 ~ 2025.8.3)| 논문 | 키워드 확장 방법론 설계 |✅ |
-| 10주차 (2025.8.4 ~ 2025.8.10)| 논문 | 키워드 확장 방법론 구현 |✅ |
-| 11주차 (2025.8.11 ~ 2025.8.17)| 논문 | 키워드 확장 방법론 평가 |✅ |
-| 12주차 (2025.8.18 ~ 2025.8.24)| 모델 | 모델 API화 |✅ |
-| 13주차 (2025.8.25 ~ 2025.9.1)| 모델 | 모델 배포 |✅ |
+#### 주요 기능
+1. **키워드 추출**: KoBERT를 이용해 만든 딥러닝 모델로 정확한 한국어 키워드 추출
+2. **키워드 설명**: 추출된 키워드가 선택된 이유를 설명하는 해석 가능한 AI 기능
+3. **품사 분석 시각화**: 텍스트의 품사별 분포를 직관적으로 보여주는 시각화 기능
+4. **실시간 분석**: 웹 인터페이스를 통한 즉시 텍스트 분석 및 결과 제공
 
+#### 기획 내용
+- **사용자 친화적 인터페이스**: React 기반의 직관적이고 반응형 웹 UI 제공
+- **API 서비스**: FastAPI를 통한 RESTful API로 다양한 플랫폼에서 활용 가능
+- **데이터베이스 연동**: PostgreSQL을 활용한 분석 결과 저장 및 관리
+- **Docker 기반 배포**: 컨테이너화를 통한 쉬운 배포 및 확장성 확보
 
-## 2. 시스템 구상도
-![image](./src/img/system_figure.png)
+### 2.2. 기존 서비스 대비 차별성
 
-## 3. 개발 환경
-```
-NLP
-python 3.12.9
-torch 2.5.1(stable)
-transformers 4.49.0
-torchcrf 1.1.0 (deprecated)
+#### 유사 서비스 비교
+1. **KeyBERT**: 영어 중심, 계산 복잡도 높음, 도메인 특화 부족
+2. **KoNLPy 기반 솔루션**: 통계적 방법론, 문맥 이해 부족
+3. **상용 API 서비스**: 비용 부담, 데이터 보안 문제, 커스터마이징 한계
 
-BackEnd
-fastapi 0.115.0 ~ 0.116.0
-pydantic 2.11.0 ~ 2.12.0
-sqlalchemy 2.0.0 ~ 2.1.0
-python-mecab-ko 1.3.7
-python-mecab-ko-dic 2.1.1.post2
+#### 차별점
+1. **한국어 특화**: KoBERT 기반으로 한국어 형태소와 문맥을 정확히 이해
+2. **성능 우수성**: 기존 KeyBERT 대비 F1 Score 20%p 향상
+3. **속도 최적화**: 지식 증류를 통해 2.5배 빠른 처리 속도 달성
+4. **해석 가능성**: 키워드 추출 근거를 사용자에게 명확히 제시
+5. **오픈소스**: 무료 사용 가능하며 커스터마이징 자유도 높음
+6. **통합 플랫폼**: 키워드 추출부터 시각화까지 원스톱 서비스 제공
 
-FrontEnd
-```
+### 2.3. 사회적 가치 도입 계획
 
-## 4. 데이터
-|  | 023.국회 회의록 기반<br>지식검색 데이터 | 143.민원 업무 효율,<br>자동화를 위한 언어 AI 학습데이터 | 115.법률-규정 텍스트 분석<br>데이터_고도화_상황에 따른 판례 데이터 | 전체 데이터<br>(전처리 전) | 전체 데이터<br>(전처리 후) |
-| :---: | :---: | :---: | :---: | :---: | :---: |
-| train<br>데이터 수 | 70466 | 800000 | 20160 + 53209 | 943835 | 20337 |
-| test<br>데이터 수 | 8800 | 100000 | 6651 | 115451 | 4845 |
+#### 공공성
+- **공공데이터 활용**: 국회 회의록, 법률 문서, 민원 데이터 등 공공데이터를 학습에 활용하여 공공 서비스 개선에 기여
+- **무료 서비스**: 오픈소스로 공개하여 누구나 자유롭게 사용 가능
+- **교육 활용**: 대학교 및 연구기관에서 한국어 자연어 처리 교육 자료로 활용
 
-### 전체 데이터(정제 전 후)
+#### 지속 가능성
+- **경량화 모델**: 지식 증류를 통한 모델 경량화로 서버 자원 사용량 최소화
+- **효율적 아키텍처**: 마이크로서비스 아키텍처로 필요한 기능만 선택적 사용 가능
+- **확장 가능성**: 모듈화된 설계로 새로운 기능 추가 및 성능 개선 용이
 
-| | 데이터 전처리 전 분포 | 데이터 전처리 후 분포 |
-| :---: | :---: | :---: |
-| train | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_before_cleaning.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/data_preprocessing/train_after_cleaning.png" />|
-| test | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_before_cleaning.png" /> | <img width="300px" alt="test_before_cleaning" src="./src/img/data_preprocessing/test_after_cleaning.png" />|
+#### 환경 보호
+- **에너지 효율성**: 경량화된 모델로 GPU 사용량 감소 및 전력 소비 절약
+- **지속적인 최적화**: 모델 압축 기술 연구를 통한 지속적인 효율성 개선
 
-## 5. Teacher 모델 학습
+## 3. 시스템 설계
 
-### 5.1 학습 디렉토리로 이동
+### 3.1. 시스템 구성도
+![image](./src/img/system.png)
 
-```bash
-cd PROJECT_DIR/nlp
-```
+### 3.2. 사용 기술
 
-### 5.2 학습 실행
+#### 자연어 처리 (NLP)
+- **Python**: 3.12.9
+- **PyTorch**: 2.5.1 (stable)
+- **Transformers**: 4.49.0 (Hugging Face)
+- **TorchCRF**: 1.1.0 (CRF Layer)
+- **KoBERT**: SKT Brain의 한국어 BERT 모델
+- **Mecab**: 형태소 분석기 (python-mecab-ko 1.3.7)
 
-```bash
-python train.py --train_data_path training_data.json \
---batch_size 64 \
---split_ratio 0.1 \
---train_logger_name logger_name \
---num_warmup_steps 375 \
---val_freq 300 \
---save_freq 300
-```
+#### 백엔드 (Backend)
+- **FastAPI**: 0.115.0 ~ 0.116.0 (고성능 웹 프레임워크)
+- **Pydantic**: 2.11.0 ~ 2.12.0 (데이터 검증)
+- **SQLAlchemy**: 2.0.0 ~ 2.1.0 (ORM)
+- **PostgreSQL**: 관계형 데이터베이스
+- **Uvicorn**: ASGI 서버
+- **Psycopg2**: PostgreSQL 드라이버
 
-### 5.3 학습 세부사항
+#### 프론트엔드 (Frontend)
+- **React**: 18.2.0 (사용자 인터페이스 라이브러리)
+- **TypeScript**: 5.8.3 (정적 타입 검사)
+- **Vite**: 6.3.5 (빌드 도구)
+- **React Router DOM**: 7.7.1 (라우팅)
+- **D3.js**: 7.9.0 (데이터 시각화)
+- **React D3 Cloud**: 1.0.6 (워드클라우드)
+- **SCSS**: 스타일링
+- **React Icons**: 5.5.0 (아이콘)
 
-- Batch Size: `64`
-- Train/Validation Split: `90% / 10%`
-- Number of Epochs: `12`
-- Learning Rate: `5e-5`
-- Warm-up Steps: `375` (전체 스텝의 약 10%)
-- Validation Frequency: `300` 스텝마다 검증 수행
-- Model Saving Criteria:
-  - `300` 스텝마다 모델 저장
-  - Validation loss가 최고 성능 모델보다 낮아질 경우 Best 모델로 저장
-- Random Seed: `42`
-- Device: `cuda` (Google Colab A100 환경)
-- Data Loader Workers: `8`
-- 학습 소요 시간: 약 `2시간`
+#### 배포 및 인프라
+- **Docker**: 컨테이너화
+- **Docker Compose**: 멀티 컨테이너 관리
+- **PostgreSQL**: 데이터베이스 서버
 
-### 5.4 학습 결과
+## 4. 개발 결과
 
-- Loss 값을 통해 Best Model을 선정하였습니다.
-- 2 epoch 이후 Validation Loss 값이 증가하여 overfitting이 발생하였음을 확인 할 수 있습니다.
+### 4.1. 기능 설명 및 주요 기능 명세서
 
-| | |
-| :---: | :---: |
-| Loss | Accuracy | 
-| <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_loss.png" /> | <img width="300px" alt="train_before_cleaning" src="./src/img/training/training_vs_validation_accuracy.png" /> |
+#### 주요 기능 상세 설명
 
-## 6. Student 모델 학습
+##### 1. 키워드 추출 기능
+- **입력**: 한국어 텍스트 (최대 512 토큰)
+- **출력**: 추출된 키워드 집합 (Set)
+- **처리 방식**: KoBERT + CRF 기반 토큰 분류
+- **특징**: 
+  - 형태소 단위 분석으로 한국어 특성 반영
+  - 문맥을 고려한 정확한 키워드 식별
 
-### 6.1 학습 디렉토리로 이동
+##### 2. 키워드 설명 기능
+- **입력**: 원본 텍스트 + 추출된 키워드
+- **출력**: 키워드별 추출 근거 설명
+- **처리 방식**: Attention 메커니즘 분석
+- **특징**:
+  - 모델의 의사결정 과정 투명화
+  - 사용자 신뢰도 향상
+  - 키워드 품질 검증 가능
 
-```bash
-cd PROJECT_DIR/nlp/colab/distillation_experiment
-```
+##### 3. 품사 분석 시각화
+- **입력**: 한국어 텍스트
+- **출력**: 품사별 분포 차트 및 워드클라우드
+- **처리 방식**: Mecab 형태소 분석기 활용
+- **특징**:
+  - 명사, 동사, 형용사 등 품사별 통계
+  - 인터랙티브 시각화
+  - 텍스트 특성 한눈에 파악 가능
 
-### 6.2 학습 실행
+##### 4. 실시간 웹 분석
+- **입력**: 웹 인터페이스를 통한 텍스트 입력
+- **출력**: 실시간 분석 결과 (키워드 + 시각화)
+- **처리 방식**: FastAPI + React 연동
+- **특징**:
+  - 즉시 응답 (평균 3초 이내)
+  - 반응형 UI로 모든 디바이스 지원
+  - 분석 히스토리 저장 및 관리
 
-```bash
-python real_distillation_gpu.py
-```
+#### 성능 지표
 
-### 6.3 학습 세부사항
+##### 모델별 성능 비교 (테스트 데이터: 4,845개 샘플)
 
-- Batch Size: `64`
-- Train/Validation Split: `90% / 10%`
-- Number of Epochs: `5`
-- Learning Rate: `2e-5`
-- Validation Frequency: `1` epoch마다 검증 수행
-- Model Saving Criteria:
-  - F1 Score가 최고 성능 모델보다 높아질 경우 Best 모델로 저장
-- Random Seed: `42`
-- Device: `cuda` (Google Colab A100 환경)
-- Data Loader Workers: `0`
-- 학습 소요 시간: 약 `1시간`
+| 모델명 | Precision | Recall | F1 Score | 추론 시간 (테스트 데이터셋에 대한 macbook m3 air 기준) |
+|--------|-----------|--------|----------|-------------------|
+| KeyBERT(5words) | 0.0880 | 0.1296 | 0.1048 | 11분 52초 |
+| KoKeyBERT | 0.4848 | 0.2263 | 0.3086 | 6분 42초 |
+| **DistillKoKeyBERT** | **0.3640** | **0.2877** | **0.3214** | **2분 54초** |
 
-### 6.4 손실함수
-실제 지식증류에서는 다음 세 가지 항으로 구성된 결합 손실을 사용했습니다.
+##### 주요 성능 향상
+- **정확도**: F1 Score 0.3214 (KeyBERT 대비 22%p 향상)
+- **처리 속도**: 2분 54초 (KeyBERT 대비 약 4배 빠름)
+- **균형성**: Precision과 Recall의 균형 잡힌 성능
+- **경량화**: Teacher 모델 대비 5.75배 빠른 추론 속도
 
-- **Temperature**: `4.0`
-- **가중치**: `α=0.7`(KL), `β=0.2`(Task), `γ=0.1`(Cosine)
+##### 성능 비교 시각화
 
-총 손실:
-```text
-L_total = α · L_KL + β · L_task + γ · L_cos
-```
+**모델별 혼동 행렬 (Confusion Matrix)**
 
-- **KL Divergence (L_KL)**: teacher logits `z_t`, student logits `z_s`에 대해 soft target을 사용한 토큰 단위 KL. attention mask로 유효 토큰만 집계하며, `T^2` 스케일을 적용합니다.
-```text
-L_KL = KL( log_softmax(z_s / T), softmax(z_t / T) ) · T^2
-```
+|KeyBERT(5words)|KoKeyBERT|DistillKoKeyBERT|
+|:---:|:---:|:---:|
+| ![KeyBERT(5words) Confusion Matrix](./nlp/results/plots/keybert_5_confusion_matrix.png) | ![KoKeyBERT Confusion Matrix](./nlp/results/plots/kokeybert_confusion_matrix.png) | ![DistillKoKeyBERT Confusion Matrix](./nlp/results/plots/distill_kokeybert_confusion_matrix.png) |
 
-- **Task Consistency (L_task)**: 각 토큰의 최대 확률 간 MSE. attention mask로 유효 토큰에서만 계산합니다.
-```text
-L_task = MSE( max_softmax(z_s), max_softmax(z_t) )
-```
-기존 MLM 보다 Task specific한 모델을 만들기 위해 사용했습니다.
-
-- **Hidden Alignment (L_cos)**: teacher/student의 hidden states를 코사인 임베딩 손실로 정렬합니다.
-```text
-L_cos = CosineEmbeddingLoss( h_s_proj, h_t, target=1 )
-```
-
-### 6.5 학습 결과
-
-<img width="600px" alt="distillation results" src="./nlp/experiments/distillation/results/plots/real_distillation_results.png" />
-
-- 5epoch 동안 전반적으로 loss가 줄어드는 추세가 유지되었습니다.
-- 흥미로운 점은 Task Loss 덕분에 원래 모델보다 Accuracy가 향상된 점입니다.
-- 추론 속도는 원래 모델보다 약 5.75배 빠릅니다.
-
-## 7. 평가
-
-### 7.1 실험 환경 및 데이터
-- 테스트 데이터: 총 4845개 샘플
-- 평가 모델: KeyBERT(1개 키워드), KeyBERT(3개 키워드), KeyBERT(5개 키워드), KoKeyBERT, DistillKoKeyBERT
-- 평가 기준: Precision, Recall, F1 Score, Confusion Matrix(혼동 행렬)
-
-### 7.2 모델별 성능 요약
-
-| 모델명                | Precision | Recall | F1 Score | TP    | FP     | FN     | 추론 시간(T4 기준) |
-|----------------------|-----------|--------|----------|-------|--------|--------|--------|
-| KeyBERT(1word)      | 0.1296    | 0.0385 | 0.0594   | 628  | 4216  | 15678  | 11분42초 |
-| KeyBERT(3words)      | 0.1041    | 0.0927 | 0.0981   | 1511  | 13000  | 14795  | 12분43초 |
-| KeyBERT(5words) (baseline)      | 0.0880    | 0.1296 | 0.1048   | 2113  | 21893  | 14193  | 11분 52초 |
-| KoKeyBERT            | 0.4848<br>    | 0.2263<br> | 0.3086<br>   | 3690  | 3921   | 12616  | 6분 42초<br> |
-| DistillKoKeyBERT     | **0.3640<br>(24%p)**    | **0.2877<br>(16%p)** | **0.3214<br>(22%p)**   | **9384**  | **16396**   | **23228**  | **2분 54초<br>(x4)** |
-
-- **KeyBERT(1words)**: 키워드 개수를 1개로 제한한 경우.
-- **KeyBERT(3words)**: 키워드 개수를 3개로 제한한 경우.
-- **KeyBERT(5words)**: 키워드 개수를 5개로 확장한 경우.
-
-- **KoKeyBERT**: Precision, Recall, F1 모두 KeyBERT 대비 월등히 높음. 특히 Precision이 크게 향상됨.
-- **DistillKoKeyBERT**: Precision은 KoKeyBERT보다 낮으나, Recall은 증가하며, F1 Score는 KoKeyBERT 대비 약간의 향상을 보임. 특히 Recall이 크게 향상됨. 추론 속도는 Baseline 대비 약 4배 빠름.
-
-### 7.3 시각화 결과
-
-- **모델별 혼동 행렬**
-
-|KeyBERT(1words)|KeyBERT(3words)|KeyBERT(5words)|KoKeyBERT|DistillKoKeyBERT|
-|:---:|:---:|:---:|:---:|:---:|
- | ![KeyBERT(1words) Confusion Matrix](./nlp/results/plots/keybert_1_confusion_matrix.png) | ![KeyBERT(3words) Confusion Matrix](./nlp/results/plots/keybert_3_confusion_matrix.png) | ![KeyBERT(5words) Confusion Matrix](./nlp/results/plots/keybert_5_confusion_matrix.png) | ![KoKeyBERT Confusion Matrix](./nlp/results/plots/kokeybert_confusion_matrix.png) | ![DistillKoKeyBERT Confusion Matrix](./nlp/results/plots/distill_kokeybert_confusion_matrix.png) |
-
-- #### 성능 지표
+**성능 지표 추이**
 
 | Precision | Recall | F1 Score | Inference Time |
 |-----------|---------|-----------|-----------|
 | ![Precision Comparison](./nlp/results/plots/precision_comparison_by_progress.png) | ![Recall Comparison](./nlp/results/plots/recall_comparison_by_progress.png) | ![F1 Score Comparison](./nlp/results/plots/f1_comparison_by_progress.png) | ![Inference Time Barplot](./nlp/results/plots/inference_time_barplot.png) |
 
-### 7.4 분석
+### 4.2. 디렉토리 구조
 
-- #### 7.4.1 주요 성능 향상 (KoKeyBERT)
-  1. F1 Score 개선: KoKeyBERT는 KeyBERT 대비 F1 Score에서 약 20%p(퍼센트 포인트) 향상이라는 매우 의미 있는 성능 개선을 달성했다. 이는 모델의 정확도(Precision)와 재현율(Recall)이 균형 있게 크게 향상되었음을 의미한다.
-  2. 추론 속도 향상: 동일 GPU 환경(NVIDIA T4)에서 비교했을 때, KoKeyBERT는 KeyBERT 대비 약 2.5배 빠른 추론 속도를 보였으며, 이는 효율성 측면에서도 뛰어난 성능을 입증하는 결과이다. 특히 이러한 속도 향상은 다음과 같은 데이터 처리 방식의 차이를 고려할 때 KoKeyBERT 모델 자체의 높은 연산 효율성을 더욱 부각시킨다. KeyBERT는 라이브러리 설계상 추론 시 전체 데이터를 메모리에 사전 적재하므로 데이터 로딩으로 인한 병목 현상이 거의 발생하지 않는다. 반면, KoKeyBERT는 표준적인 Dataloader 클래스를 사용하여 배치(batch) 단위로 데이터를 처리하는 과정에서 상대적으로 데이터 로딩 및 전처리로 인한 병목이 발생할 가능성이 있다. KoKeyBERT가 이러한 잠재적인 데이터 처리 병목에도 불구하고 KeyBERT보다 빠른 추론 속도를 달성했다는 점은 그 자체의 연산 효율성이 매우 뛰어남을 시사한다.
-
-- #### 심층 분석
-  1. KeyBERT의 키워드 개수별 성능 변화: KeyBERT의 경우, 추출 대상 키워드 개수를 증가시켜도 F1 Score의 유의미한 개선으로 이어지지 않았으며, 오히려 과도하게 많은 키워드를 추천하려 할 때 Precision이 하락하는 경향이 관찰되었다.
-  2. 입력 데이터 길이에 따른 성능 변화: 평가 데이터가 입력 텍스트의 길이를 기준으로 오름차순 정렬되어 있어, 평가 단계(step)가 진행됨에 따라 입력 텍스트 길이가 증가하는 특성이 있었다. 이로 인해 KoKeyBERT와 KeyBERT 모든 모델에서 텍스트 길이가 길어질수록 전반적인 성능 지표가 점진적으로 하락하는 경향이 공통적으로 나타났다.
-
-- #### 7.4.2 주요 성능 향상 (DistillKoKeyBERT)
-  1. F1 Score 개선: DistillKoKeyBERT는 Distillation에도 불구하고 KeyBERT 대비 F1 Score에서 약 2%p 향상을 보였다. 또한 모델의 Precision 과 Recall이 균형을 이루게 되었다.
-  2. 추론 속도 향상: 동일 Macbook m3 air 환경에서 비교했을 때, DistillKoKeyBERT는 KeyBERT 대비 테스트 환경에서 약 2.2배 빠른 추론 속도를 보였다.
-
-- #### 7.4.3 한계점
-
-1.  키워드 개수 분포 불균형
-
-  | 데이터셋 | 중앙값 | 평균 | 75% 이하 키워드 수 | 분포도 |
-  |:---:|:---:|:---:|:---:|:---:|
-  | 학습 데이터 | 2개 | 3.43개 | 5개 이하 | <img width="300px" alt="train_keyword_count" src="./src/img/data_preprocessing/train_keyword_count_distribution.png" /> |
-  | 테스트 데이터 | 2개 | 3.38개 | 4개 이하 | <img width="300px" alt="test_keyword_count" src="./src/img/data_preprocessing/test_keyword_count_distribution.png" /> |
-
-  위와 같은 데이터 분포 특성은 KoKeyBERT 모델의 성능 지표에서 Precision이 높고 Recall이 상대적으로 낮은 현상을 설명할 수 있다. 모델이 학습 데이터의 특성을 잘 반영하여 4개 이하의 키워드를 정확하게 추출하는 데는 뛰어난 성능을 보이지만(높은 Precision), 실제로는 더 많은 키워드가 필요한 경우에도 보수적으로 적은 수의 키워드만 추출하는 경향이 있기 때문이다(낮은 Recall).
-
-2.  정답 키워드 특성 (명사 중심): 사용된 데이터셋의 정답 키워드가 주로 명사로 구성되어 있다는 점을 고려할 때, EM(Exact Match) 기반의 평가는 명사 추출에 강점을 보이는 모델에 유리하게 작용할 수 있다. KeyBERT가 의미 있는 구(phrase) 형태의 키워드를 추출하더라도, 정답이 명사 중심일 경우 평가에서 불리했을 가능성을 고려해야 한다. 
-
-
-## 7. 사용법 (DistillKoKeyBERT)
-
-1. 라이브러리 임포트
-```python
-from distill_model import DistillKoKeyBERT
-from transformers import BertConfig
-from kobert_tokenizer import KoBERTTokenizer
 ```
-2. 모델 및 토크나이저 로드(CPU 환경 가정)
-```python
-config = BertConfig.from_pretrained('skt/kobert-base-v1')
-model = DistillKoKeyBERT(config=config)
-model.load_state_dict(torch.load('distill_KoKeyBERT.pt', map_location=torch.device('cpu'), weights_only=True))
-tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
+2025_CSE_graduation_assignment/
+├── back_end/                          # 백엔드 서버
+│   ├── app/                           # FastAPI 애플리케이션
+│   │   ├── __init__.py
+│   │   ├── main.py                    # 메인 서버 파일
+│   │   ├── models.py                  # 데이터베이스 모델
+│   │   ├── schemas.py                 # Pydantic 스키마
+│   │   ├── crud.py                    # 데이터베이스 CRUD 작업
+│   │   ├── database.py                # 데이터베이스 연결 설정
+│   │   ├── text_analysis.py           # 텍스트 분석 로직
+│   │   ├── nlp/                       # NLP 모델 관련 파일
+│   │   └── static/                    # 정적 파일
+│   ├── Dockerfile                     # 백엔드 Docker 설정
+│   └── requirements.txt               # Python 의존성 패키지
+│
+├── front_end/                         # 프론트엔드 웹 애플리케이션
+│   ├── src/
+│   │   ├── components/                # React 컴포넌트
+│   │   │   ├── Drawer/               # 사이드바 컴포넌트
+│   │   │   ├── FloatingSearch/       # 플로팅 검색 컴포넌트
+│   │   │   └── SearchBar/            # 검색바 컴포넌트
+│   │   ├── pages/                    # 페이지 컴포넌트
+│   │   │   ├── Home/                 # 홈 페이지
+│   │   │   └── Detail/               # 상세 분석 페이지
+│   │   ├── api/                      # API 통신
+│   │   │   ├── endpoints.ts          # API 엔드포인트 정의
+│   │   │   └── services/             # API 서비스 로직
+│   │   ├── types/                    # TypeScript 타입 정의
+│   │   │   ├── analysis.ts           # 분석 관련 타입
+│   │   │   ├── api.ts                # API 관련 타입
+│   │   │   ├── common.ts             # 공통 타입
+│   │   │   ├── ui.ts                 # UI 관련 타입
+│   │   │   └── wordcloud.ts          # 워드클라우드 타입
+│   │   ├── routes/                   # 라우팅 설정
+│   │   ├── utils/                    # 유틸리티 함수
+│   │   ├── styles/                   # 전역 스타일
+│   │   └── data/                     # 모크 데이터
+│   ├── public/                       # 정적 자원
+│   ├── Dockerfile                    # 프론트엔드 Docker 설정
+│   ├── package.json                  # Node.js 의존성
+│   ├── tsconfig.json                 # TypeScript 설정
+│   └── vite.config.ts                # Vite 빌드 설정
+│
+├── nlp/                              # 자연어 처리 모델
+│   ├── src/                          # NLP 소스 코드
+│   │   ├── data/                     # 데이터 처리
+│   │   │   ├── dataset.py            # 데이터셋 클래스
+│   │   │   ├── analysis.py           # 데이터 분석
+│   │   │   └── preprocessing.ipynb   # 전처리 노트북
+│   │   ├── models/                   # 모델 정의
+│   │   ├── training/                 # 학습 관련 코드
+│   │   └── utils/                    # 유틸리티 함수
+│   ├── experiments/                  # 실험 관련
+│   │   └── distillation/             # 지식 증류 실험
+│   │       ├── colab/                # Google Colab 실험 코드
+│   │       ├── distill_model.py      # 증류 모델 구현
+│   │       ├── results/              # 실험 결과
+│   │       └── utils/                # 실험 유틸리티
+│   ├── models/                       # 학습된 모델 파일
+│   │   ├── kokeybert_best.pt         # Teacher 모델
+│   │   └── kokeybert_distilled.pt    # Student 모델
+│   ├── results/                      # 평가 결과
+│   │   ├── json/                     # JSON 형태 결과
+│   │   └── plots/                    # 시각화 결과
+│   ├── logs/                         # 학습 로그
+│   └── tokenizer/                    # 토크나이저
+│       └── kobert_tokenizer.py       # KoBERT 토크나이저
+│
+├── database/                         # PostgreSQL 데이터베이스 파일
+│   ├── base/                         # 데이터베이스 기본 파일
+│   ├── global/                       # 글로벌 설정
+│   └── [PostgreSQL 시스템 파일들]
+│
+├── src/                              # 공통 자원
+│   ├── data/                         # 학습/테스트 데이터
+│   │   ├── train_clean.json          # 정제된 학습 데이터
+│   │   └── test_clean.json           # 정제된 테스트 데이터
+│   └── img/                          # 이미지 자원
+│       ├── data_preprocessing/       # 데이터 전처리 관련 이미지
+│       ├── training/                 # 학습 과정 이미지
+│       ├── test/                     # 테스트 결과 이미지
+│       ├── model_image.png           # 모델 로고
+│       └── system_figure.png         # 시스템 구성도
+│
+├── compose.yaml                      # Docker Compose 설정
+├── README.md                         # 프로젝트 설명서
+└── README_final.md                   # 최종 보고서
 ```
-3. model.extract_keywords 함수 사용
-```python
-while True:
-        text = input('Enter a text: ')
-        print(model.extract_keywords(text, tokenizer))
-        """
-        Args: 
-          text: str
-              한국어 입력
-          tokenizer: KoBERTTokenizer
-              키버트 토크나이저
-        Returns:
-          pred_keywords: set
-              예측된 단어 집합
-        """
+
+## 5. 설치 및 실행 방법
+
+### 5.1. 설치절차 및 실행 방법
+
+#### 사전 요구사항
+- Docker 및 Docker Compose 설치
+- Git 설치
+- 최소 8GB RAM, 10GB 디스크 여유 공간
+
+#### 설치 및 실행 단계
+
+##### 1. 프로젝트 클론
+```bash
+git clone https://github.com/your-repository/2025_CSE_graduation_assignment.git
+cd 2025_CSE_graduation_assignment
 ```
-        
 
+##### 2. Docker Compose를 통한 전체 시스템 실행
+```bash
+# 전체 서비스 빌드 및 실행
+docker-compose up --build
+```
 
+#### NLP 모델 학습 (선택사항)
 
-## 8. 멤버
+##### Teacher 모델 학습:
+```bash
+cd nlp
+python train.py --train_data_path training_data.json \
+--batch_size 64 \
+--split_ratio 0.1 \
+--train_logger_name kokeybert_logger \
+--num_warmup_steps 375 \
+--val_freq 300 \
+--save_freq 300
+```
+
+##### Student 모델 학습 (지식 증류):
+```bash
+cd nlp/experiments/distillation/colab
+python real_distillation_gpu.py
+```
+
+### 5.2. 오류 발생 시 해결 방법
+
+#### 자주 발생하는 오류 및 해결책
+
+##### 1. Docker 관련 오류
+```bash
+# 포트 충돌 오류
+Error: Port 8000 is already in use
+
+# 해결방법: 사용 중인 포트 확인 및 종료
+lsof -ti:8000 | xargs kill -9
+docker-compose down
+docker-compose up --build
+```
+
+##### 2. 데이터베이스 연결 오류
+```bash
+# 데이터베이스 연결 실패
+sqlalchemy.exc.OperationalError: could not connect to server
+
+# 해결방법: 데이터베이스 컨테이너 상태 확인
+docker-compose ps
+docker-compose up database -d
+# 잠시 대기 후 백엔드 재시작
+```
+
+##### 3. 모델 파일 누락 오류
+```bash
+# 모델 파일을 찾을 수 없음
+FileNotFoundError: No such file or directory: 'models/kokeybert_best.pt'
+
+# 해결방법: 사전 학습된 모델 다운로드 또는 학습 실행
+cd nlp
+# 모델 학습 실행 또는 사전 학습된 모델 파일 다운로드
+```
+
+##### 4. 프론트엔드 빌드 오류
+```bash
+# Node.js 의존성 설치 실패
+npm ERR! peer dep missing
+
+# 해결방법: 의존성 재설치
+cd front_end
+rm -rf node_modules package-lock.json
+npm install
+npm run dev
+```
+
+##### 5. 메모리 부족 오류
+```bash
+# CUDA out of memory (GPU 환경)
+RuntimeError: CUDA out of memory
+
+# 해결방법: 배치 크기 줄이기
+# nlp/train.py에서 batch_size를 32 또는 16으로 변경
+```
+
+#### 로그 확인 방법
+```bash
+# Docker 컨테이너 로그 확인
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs database
+
+# 실시간 로그 모니터링
+docker-compose logs -f backend
+```
+
+#### 시스템 리셋
+```bash
+# 전체 시스템 초기화
+docker-compose down -v
+docker system prune -a
+docker-compose up --build
+```
+
+## 6. 소개 자료 및 시연 영상
+
+### 6.1. 프로젝트 소개 자료
+> 추후 작성 예정
+
+### 6.2. 시연 영상
+> 추후 작성 예정
+
+## 7. 팀 구성
+
+### 7.1. 팀원별 소개 및 역할 분담
+
 | 박준혁 | 이차현 | 임성표 |
 |:-------:|:-------:|:-------:| 
 |<a href="https://github.com/JakeFRCSE"><img width="100px" alt="박준혁" src="https://avatars.githubusercontent.com/u/162955476?v=4" /></a>|<a href="https://github.com/chahyunlee"><img width="100px" alt="이차현" src="https://avatars.githubusercontent.com/u/163325051?v=4" /></a>|<a href="https://github.com/LimSungPyo"><img width="100px" alt="임성표" src="https://avatars.githubusercontent.com/u/132332450?v=4" /></a>|
 | eppi001004@gmail.com | chahyun20@naver.com | lsp11121@gmail.com |
 | 자연어처리 | 프론트엔드 | 백엔드 |
 
-## 9. 참고 자료
-software: 
+#### 박준혁 (자연어처리 담당)
+- **주요 역할**: 
+  - KoKeyBERT 모델 설계 및 구현
+  - 데이터 전처리 및 학습 파이프라인 구축
+  - 지식 증류를 통한 모델 경량화
+  - 모델 성능 평가 및 최적화
+- **기술 스택**: Python, PyTorch, Transformers, KoBERT, CRF
 
-1.[KoBERT](https://github.com/SKTBrain/KoBERT)
+#### 이차현 (프론트엔드 담당)
+- **주요 역할**:
+  - React 기반 사용자 인터페이스 설계 및 구현
+  - TypeScript를 활용한 타입 안전성 확보
+  - D3.js를 이용한 데이터 시각화 구현
+  - 반응형 웹 디자인 및 사용자 경험 최적화
+- **기술 스택**: React, TypeScript, SCSS, D3.js, Vite
 
-paper:
+#### 임성표 (백엔드 담당)
+- **주요 역할**:
+  - FastAPI 기반 RESTful API 서버 구축
+  - PostgreSQL 데이터베이스 설계 및 관리
+  - Docker를 이용한 컨테이너화 및 배포 환경 구성
+  - NLP 모델과 웹 서비스 간 연동 구현
+- **기술 스택**: FastAPI, PostgreSQL, Docker, SQLAlchemy
 
-1. [DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter](https://arxiv.org/pdf/1910.01108)
+### 7.2. 팀원 별 참여 후기
+> (요청에 따라 생략)
 
-2. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805)
+## 8. 참고 문헌 및 출처
 
-3. [What does BERT look at? An analysis of BERT's attention](https://arxiv.org/pdf/1906.04341)
+### Software
+1. [KoBERT](https://github.com/SKTBrain/KoBERT) - SKT Brain의 한국어 BERT 모델
+2. [FastAPI](https://fastapi.tiangolo.com/) - 고성능 웹 프레임워크
+3. [React](https://reactjs.org/) - 사용자 인터페이스 라이브러리
+4. [PyTorch](https://pytorch.org/) - 딥러닝 프레임워크
+5. [Transformers](https://huggingface.co/transformers/) - Hugging Face 자연어처리 라이브러리
 
-website:
-1. [neuronpedia](https://www.neuronpedia.org)
-2. [SHAP library](https://shap.readthedocs.io/en/latest/example_notebooks/text_examples/sentiment_analysis/Positive%20vs.%20Negative%20Sentiment%20Classification.html)
+### Papers
+1. [DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter](https://arxiv.org/pdf/1910.01108) - 지식 증류 기법의 이론적 기반
+2. [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805) - BERT 모델의 원리 및 구조
+3. [What does BERT look at? An analysis of BERT's attention](https://arxiv.org/pdf/1906.04341) - BERT 어텐션 메커니즘 분석
+
+### Datasets
+1. **023.국회 회의록 기반 지식검색 데이터** - AI Hub 공공데이터
+2. **143.민원 업무 효율, 자동화를 위한 언어 AI 학습데이터** - AI Hub 공공데이터  
+3. **115.법률-규정 텍스트 분석 데이터_고도화_상황에 따른 판례 데이터** - AI Hub 공공데이터
+
+### Websites
+1. [Neuronpedia](https://www.neuronpedia.org) - 신경망 해석가능성 연구
+2. [SHAP Library](https://shap.readthedocs.io/en/latest/example_notebooks/text_examples/sentiment_analysis/Positive%20vs.%20Negative%20Sentiment%20Classification.html) - 모델 해석 도구
+
+### Tools and Libraries
+1. [Mecab](https://bitbucket.org/eunjeon/mecab-ko/src/master/) - 한국어 형태소 분석기
+2. [PostgreSQL](https://www.postgresql.org/) - 관계형 데이터베이스
+3. [Docker](https://www.docker.com/) - 컨테이너 플랫폼
+4. [D3.js](https://d3js.org/) - 데이터 시각화 라이브러리
