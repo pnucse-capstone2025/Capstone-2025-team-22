@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""test.py와 동일한 방식으로 KoKeyBERT 성능 측정"""
-
 import torch
 import sys
 import os

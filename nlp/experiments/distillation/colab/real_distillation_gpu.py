@@ -1,8 +1,3 @@
-"""
-실제 KoKeyBERT와 실제 데이터를 사용한 GPU 최적화 Knowledge Distillation
-가짜 모델이나 가짜 데이터 없이 진짜 실험
-"""
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -24,8 +19,6 @@ from typing import List
 
 def process_model_output(model_output, tags, model_name="Model"):
     """
-    KoKeyBERT 모델 출력을 처리하여 예측 텐서를 반환합니다.
-    
     Args:
         model_output: 모델 출력 (log_likelihood, sequence_of_tags) 또는 sequence_of_tags
         tags: 정답 태그 텐서 (디바이스 정보를 위해 사용)
@@ -80,7 +73,7 @@ def process_model_output(model_output, tags, model_name="Model"):
         seq_len = tags.size(1)
         return torch.zeros(batch_size, seq_len, dtype=torch.long, device=tags.device)
 
-# 부모 디렉토리 추가 (실제 모델 import를 위해)
+# 부모 디렉토리 추가 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)  # distillation_experiment
 grandparent_dir = os.path.dirname(parent_dir)  # nlp
@@ -91,9 +84,7 @@ sys.path.insert(0, grandparent_dir)
 sys.path.insert(0, root_dir)
 
 def extract_keywords_from_bio_tags(tokens, bio_tags, attention_mask, tokenizer) -> List[str]:
-    """
-    BIO 태그를 기반으로 키워드를 추출합니다. (test.py와 동일한 로직)
-    
+    """   
     Args:
         tokens: 토큰 ID 텐서
         bio_tags: BIO 태그 텐서 (0: B, 1: I, 2: O)
@@ -166,9 +157,7 @@ def extract_keywords_from_bio_tags(tokens, bio_tags, attention_mask, tokenizer) 
 
 
 def evaluate_keywords(pred_keywords, true_keywords):
-    """
-    예측된 키워드와 실제 키워드를 비교하여 confusion matrix를 계산합니다.
-    
+    """    
     Args:
         pred_keywords: 예측된 키워드 리스트
         true_keywords: 실제 키워드 리스트

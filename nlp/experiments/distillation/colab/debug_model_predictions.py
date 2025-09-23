@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-"""모델 예측 결과 디버깅"""
-
 import torch
 import sys
 import os

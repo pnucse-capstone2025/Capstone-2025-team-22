@@ -1,7 +1,3 @@
-"""
-키워드 추출 관련 유틸리티 (app.nlp.utils.extract 대체)
-"""
-
 def extract_keywords_from_bio_tags(tokens, bio_tags):
     """BIO 태그로부터 키워드 추출"""
     keywords = []

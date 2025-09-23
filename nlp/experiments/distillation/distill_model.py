@@ -1,6 +1,3 @@
-"""
-CRF 없이 선형 변환과 규칙 기반 후처리를 사용하는 간단한 Student 모델
-"""
 import torch
 from torch import nn
 from transformers import BertModel, BertConfig
@@ -139,7 +136,7 @@ class DistillKoKeyBERT(nn.Module):
         return refined
     
     def extract_keywords(self, text, tokenizer):
-        """텍스트에서 키워드와 위치 인덱스를 추출합니다."""
+        """텍스트에서 키워드와 위치 인덱스를 추출"""
         inputs = tokenizer(text, return_tensors='pt', truncation=True, 
                           padding=True, max_length=512)
         
@@ -154,7 +151,6 @@ class DistillKoKeyBERT(nn.Module):
         else:
             predictions = predicted_tags
 
-        # ▼▼▼▼▼▼▼▼▼▼ [핵심 수정] 토큰 인덱스를 직접 반환하도록 변경 ▼▼▼▼▼▼▼▼▼▼
         keywords_with_indices = self.extract_keywords_from_predictions(
             input_ids[0], predictions, attention_mask[0], tokenizer
         )
@@ -180,13 +176,12 @@ class DistillKoKeyBERT(nn.Module):
                 except ValueError:
                     # 텍스트에서 못찾는 경우는 거의 없겠지만 예외 처리
                     pass
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
         return final_keywords, outputs
 
     def extract_keywords_from_predictions(self, input_ids, predictions, attention_mask, tokenizer):
         """
-        예측 결과에서 키워드와 '토큰 인덱스'를 추출합니다.
+        예측 결과에서 키워드와 '토큰 인덱스'를 추출
         """
         keywords = []
         current_keyword_tokens_indices = [] # 토큰 ID 대신 인덱스를 저장
@@ -237,7 +232,7 @@ class DistillKoKeyBERT(nn.Module):
     @classmethod
     def from_original_model(cls, original_model):
         """
-        원본 KoKeyBERT 모델을 DistillKoKeyBERT로 변환합니다.
+        원본 KoKeyBERT 모델을 DistillKoKeyBERT로 변환
         
         Args:
             original_model: 원본 KoKeyBERT 모델
@@ -306,7 +301,7 @@ if __name__ == '__main__':
     tokenizer = KoBERTTokenizer.from_pretrained('skt/kobert-base-v1')
 
     # 테스트 입력
-    text = "저희들이 이 개정안을 낸 이유는 이렇습니다. 지금 자치법에는 지방자치의 종류를 특별시․광역시 광역 하나하고 시군구, 2개로 나눠지고 있습니다. 그런데 광역시에 준하는 인구 100만 넘는 도시가 있습니다. 이것을 자꾸 광역으로 해 달라고 하는데 그렇게 하기 어려우니 또 인구규모는 다른 보통 시하고 다른 측면이 있어서 단순히 명칭만 특례시를 부여하는 취지에서 개정안을 마련했다는 것을 말씀드리고요. 특례군과 관련해서는 시각이 이럴 것 같습니다. 특례시 명칭은 재정특례 쪽에 관심을 두고 요구하는 것이고요. 특례군은 시책입니다. 소멸지역에 대해서 소멸 안 되게끔 방지하게끔 하는 시책 추진 방법입니다. 그래서 특례군 시책에 대해서는 다른 특별법에 의해서 특별한 시책을 강구할 수 있도록 법이 있기 때문에 그 법에 의해서 강조하고 강화시키면 충분할 것이다 그래서 특례군 도입은 아니다 하는 것이 정부의 입장입니다."
+    text = "테스트 입력"
     keywords_info, outputs = model.extract_keywords(text, tokenizer)
     pprint.pprint(keywords_info)
 

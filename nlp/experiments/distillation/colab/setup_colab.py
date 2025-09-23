@@ -1,7 +1,3 @@
-"""
-Google Colab 환경 설정 스크립트
-"""
-
 import subprocess
 import sys
 import os
