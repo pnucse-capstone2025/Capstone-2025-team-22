@@ -59,8 +59,7 @@ def extract_nouns_verbs_adjectives(text):
 
 def _estimate_token_offsets(text, tokens):
     """
-    토큰 리스트와 원본 텍스트를 비교하여 각 토큰의 오프셋을 추정합니다.
-    offset_mapping을 지원하지 않는 토크나이저를 위한 대안입니다.
+    토큰 리스트와 원본 텍스트를 비교하여 각 토큰의 오프셋을 추정
     """
     offsets = []
     current_pos = 0
@@ -71,7 +70,6 @@ def _estimate_token_offsets(text, tokens):
             offsets.append((0, 0)) # 실제 텍스트에 해당하지 않음
             continue
         
-        # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분 수정 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
         # 토크나이저가 추가하는 특수문자( )와 서브워드 접두사(##)를 모두 제거
         clean_token = token.lstrip('▁##')
         
@@ -79,7 +77,6 @@ def _estimate_token_offsets(text, tokens):
         if not clean_token:
             offsets.append((0, 0))
             continue
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         
         try:
             # 현재 위치부터 토큰 검색
@@ -95,11 +92,9 @@ def _estimate_token_offsets(text, tokens):
 
     return offsets
 
-# text_analysis.py 파일에 추가
-
 def _filter_substrings(result_list):
     """
-    결과 리스트에서 다른 단어에 포함되는 부분 문자열을 제거합니다.
+    결과 리스트에서 다른 단어에 포함되는 부분 문자열을 제거
     예: ['국회의원', '의원'] -> ['국회의원']
     """
     # 점수가 높아 순서가 빠른 단어부터 처리하므로, 긴 단어가 유지될 확률이 높음
@@ -118,7 +113,7 @@ def _filter_substrings(result_list):
 
 def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
     """
-    각 키워드가 주목한 명사/동사의 어텐션 스코어와 위치를 개별적으로 분석합니다.
+    각 키워드가 주목한 명사/동사의 어텐션 스코어와 위치를 개별적으로 분석
     """
     # 0. 공통 데이터 준비
     inputs = tokenizer(text, return_tensors='pt', truncation=True, padding=True, max_length=512)
@@ -177,8 +172,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
     for kw_info in keywords_info:
         keyword_str = kw_info['keyword']
         
-        # ▼▼▼▼▼▼▼▼▼▼ [핵심 수정] 이제 토큰 인덱스를 직접 사용합니다 ▼▼▼▼▼▼▼▼▼▼
-        # 더 이상 start, end로 토큰을 찾을 필요가 없습니다.
+        # 이제 토큰 인덱스를 직접 사용
         keyword_indices = kw_info.get('token_indices')
         
         # 만약 token_indices가 없다면 이전 방식으로 호환되도록 처리
@@ -189,7 +183,6 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
                 if offset_start < end and offset_end > start:
                     keyword_indices.append(i)
             keyword_indices.sort()
-        # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
         
         if not keyword_indices:
             final_results[keyword_str] = {'nouns': [], 'verbs': []} # 'adjectives' -> 'verbs'
@@ -224,11 +217,9 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
             if word in keyword_strings_set: 
                 continue
 
-            # ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 이 부분 추가 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
             # 필터 2: attended 단어가 현재 분석 중인 키워드의 부분 문자열이면 제외
             if word in keyword_str:
                 continue
-            # ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
                 
             pos = phrase_pos_map.get(word, "")
             
@@ -272,7 +263,7 @@ def analyze_keyword_attention(text, keywords_info, attentions, tokenizer):
         
     return final_results
 
-# sample_text = "그런데 지금 이것에 목적 변경 절차를 두면 감독 당국에서 이것을 와치(watch)하는데 이게 시리어스 와치 리스트(serious watch list), 무슨 와치 리스트 그런 것 있잖아요. 그렇게 보는 거예요?"
+# sample_text = "샘플 테스트"
 # print(extract_pos_frequencies(sample_text))
 
 # mecab = MeCab()
