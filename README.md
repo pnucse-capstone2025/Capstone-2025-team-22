@@ -387,12 +387,12 @@ RuntimeError: CUDA out of memory
 #### 로그 확인 방법
 ```bash
 # Docker 컨테이너 로그 확인
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs database
+docker logs fastapi-backend
+docker logs react-frontend
+docker logs pgvector-db
 
 # 실시간 로그 모니터링
-docker-compose logs -f backend
+docker logs -f fastapi-backend
 ```
 
 #### 시스템 리셋
