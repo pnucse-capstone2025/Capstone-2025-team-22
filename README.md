@@ -409,7 +409,8 @@ docker-compose up --build
 [발표자료 (PDF)](https://github.com/pnucse-capstone2025/Capstone-2025-team-22/blob/8685889bb11768f678a370f51e0b66842db2488c/docs/03.%EB%B0%9C%ED%91%9C%EC%9E%90%EB%A3%8C/%E1%84%90%E1%85%A9%E1%84%86%E1%85%A1%E1%84%90%E1%85%A9%E1%84%8C%E1%85%AE%E1%84%89%E1%85%B3%20%E1%84%87%E1%85%A1%E1%86%AF%E1%84%91%E1%85%AD%20%E1%84%8C%E1%85%A1%E1%84%85%E1%85%AD.pdf)
 
 ### 6.2. 시연 영상
-> 추후 작성 예정
+[![2025 전기 졸업과제 22 토마토주스](https://img.youtube.com/vi/xe7hnoUrLW4/0.jpg)](https://www.youtube.com/watch?v=xe7hnoUrLW4)
+ 
 
 ## 7. 팀 구성
 
